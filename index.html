@@ -153,7 +153,15 @@
         <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
             
             <section id="dashboard" class="page-content active">
-                <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
+                <div class="bg-white p-6 rounded-xl shadow mb-6 flex flex-col sm:flex-row items-center gap-6">
+                    <img id="dashboardShopImage" src="https://placehold.co/120x120/e2e8f0/64748b?text=Foto+Warung" alt="Foto Warung" class="w-24 h-24 sm:w-32 sm:h-32 rounded-lg object-cover flex-shrink-0">
+                    <div class="text-center sm:text-left">
+                        <h2 id="dashboardShopName" class="text-3xl font-bold text-slate-800">Nama Warung Anda</h2>
+                        <p id="dashboardShopAddress" class="text-slate-600 mt-1">Alamat Warung Anda</p>
+                        <p id="dashboardShopPhone" class="text-slate-600 mt-1">Telepon: -</p>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-6">
                     <div class="bg-white p-6 rounded-xl shadow">
                         <h3 class="text-sm font-medium text-slate-500">Penjualan Hari Ini</h3>
@@ -401,15 +409,21 @@
                     <form id="settingsForm" class="space-y-6 mb-8">
                         <div>
                             <label for="shopName" class="block text-sm font-medium text-slate-700 mb-1">Nama Warung</label>
-                            <input type="text" id="shopName" value="Warung Sejahtera" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="shopName" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
                          <div>
                             <label for="shopAddress" class="block text-sm font-medium text-slate-700 mb-1">Alamat</label>
-                            <input type="text" id="shopAddress" value="Jl. Merdeka No. 17, Jakarta" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="shopAddress" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
                          <div>
                             <label for="shopPhone" class="block text-sm font-medium text-slate-700 mb-1">No. Telepon</label>
-                            <input type="text" id="shopPhone" value="081234567890" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="shopPhone" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="mt-4">
+                            <label for="shopImageInput" class="block text-sm font-medium text-slate-700 mb-1">Foto Warung</label>
+                            <img id="shopImagePreview" src="https://placehold.co/150x150/e2e8f0/64748b?text=Pratinjau" alt="Pratinjau Foto Warung" class="w-32 h-32 rounded-lg object-cover mb-2 border">
+                            <input type="file" id="shopImageInput" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <p class="text-xs text-slate-500 mt-1">Pilih gambar untuk foto warung (maks. 1MB, akan disimpan sebagai Base64).</p>
                         </div>
                         <div class="pt-4">
                             <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Simpan Informasi Warung</button>
@@ -776,7 +790,8 @@ document.addEventListener('DOMContentLoaded', () => {
         appSettings = storedSettings ? JSON.parse(storedSettings) : {
             shopName: "Warung Sejahtera",
             shopAddress: "Jl. Merdeka No. 17, Jakarta",
-            shopPhone: "081234567890"
+            shopPhone: "081234567890",
+            shopImageBase64: null // Initialize shop image
         };
 
         const storedGeminiApiKey = localStorage.getItem(LS_KEYS.GEMINI_API_KEY);
@@ -814,6 +829,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('shopAddress').value = appSettings.shopAddress;
         document.getElementById('shopPhone').value = appSettings.shopPhone;
         document.getElementById('geminiApiKeyInput').value = userProvidedGeminiApiKey || "";
+        document.getElementById('shopImagePreview').src = appSettings.shopImageBase64 || 'https://placehold.co/150x150/e2e8f0/64748b?text=Pratinjau';
+        document.getElementById('dashboardShopImage').src = appSettings.shopImageBase64 || 'https://placehold.co/120x120/e2e8f0/64748b?text=Foto+Warung';
 
 
         if (localStorage.getItem(LS_KEYS.PRODUCTS) === null && 
@@ -872,6 +889,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const piutangTableBodyEl = document.getElementById('piutangTableBody');
     const settingsForm = document.getElementById('settingsForm');
     const settingsMessage = document.getElementById('settingsMessage');
+    const shopImageInput = document.getElementById('shopImageInput');
+    const shopImagePreview = document.getElementById('shopImagePreview');
 
     const manageCategoriesBtn = document.getElementById('manageCategoriesBtn');
     const categoryManagementModal = document.getElementById('categoryManagementModal');
@@ -933,6 +952,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const financeTotalRevenueEl = document.getElementById('financeTotalRevenue');
     const financeTotalExpensesEl = document.getElementById('financeTotalExpenses');
     const financeNetProfitEl = document.getElementById('financeNetProfit');
+
+    let tempShopImageBase64 = appSettings.shopImageBase64; // Temporary holder for new image
+
+    if (shopImageInput) {
+        shopImageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 1024 * 1024) { // Max 1MB
+                    showCustomAlert("Ukuran file gambar terlalu besar. Maksimal 1MB.", "Error");
+                    shopImageInput.value = ""; // Reset file input
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempShopImageBase64 = e.target.result;
+                    shopImagePreview.src = tempShopImageBase64;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 
 
     if (addCustomTransactionBtn) {
@@ -1038,6 +1078,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('shopAddress').value = appSettings.shopAddress;
         document.getElementById('shopPhone').value = appSettings.shopPhone;
         geminiApiKeyInput.value = userProvidedGeminiApiKey || "";
+        shopImagePreview.src = appSettings.shopImageBase64 || 'https://placehold.co/150x150/e2e8f0/64748b?text=Pratinjau';
+        document.getElementById('dashboardShopImage').src = appSettings.shopImageBase64 || 'https://placehold.co/120x120/e2e8f0/64748b?text=Foto+Warung';
+        document.getElementById('dashboardShopName').textContent = appSettings.shopName || "Nama Warung Anda";
+        document.getElementById('dashboardShopAddress').textContent = appSettings.shopAddress || "Alamat Warung Anda";
+        document.getElementById('dashboardShopPhone').textContent = appSettings.shopPhone ? `Telepon: ${appSettings.shopPhone}` : "Telepon: -";
+
         updateLocalStorageUsageDisplay();
     }
     
@@ -1047,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', () => {
             categories: productCategories,
             customers: pelangganList,
             transactions: dailyTransactions,
-            settings: appSettings,
+            settings: appSettings, // appSettings now includes shopImageBase64
             geminiApiKey: userProvidedGeminiApiKey,
             expenses: expensesList 
         };
@@ -1077,7 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             productCategories = restoredData.categories;
                             pelangganList = restoredData.customers;
                             dailyTransactions = restoredData.transactions.map(t => ({...t, timestamp: new Date(t.timestamp)})); 
-                            appSettings = restoredData.settings;
+                            appSettings = restoredData.settings; // This will include shopImageBase64 if present
                             expensesList = restoredData.expenses ? restoredData.expenses.map(ex => ({...ex, date: new Date(ex.date)})) : [];
                             
                             if (restoredData.geminiApiKey) {
@@ -1086,6 +1132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 localStorage.removeItem(LS_KEYS.GEMINI_API_KEY);
                                 userProvidedGeminiApiKey = '';
                             }
+                            tempShopImageBase64 = appSettings.shopImageBase64; // Update temp holder
 
                             saveDataToLocalStorage(); 
                             refreshAllUI(); 
@@ -2582,7 +2629,10 @@ document.addEventListener('DOMContentLoaded', () => {
         appSettings.shopName = document.getElementById('shopName').value;
         appSettings.shopAddress = document.getElementById('shopAddress').value;
         appSettings.shopPhone = document.getElementById('shopPhone').value;
+        appSettings.shopImageBase64 = tempShopImageBase64; // Save the new image
+        
         saveDataToLocalStorage();
+        refreshAllUI(); // Refresh UI to show new shop info on dashboard
         settingsMessage.textContent = 'Informasi warung berhasil disimpan!';
         settingsMessage.className = 'mt-4 text-center text-green-600';
         setTimeout(() => settingsMessage.textContent = '', 3000);
@@ -2676,7 +2726,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 page.classList.add('hidden');
                 if (page.id === target) {
                     page.classList.remove('hidden');
-                    if (target === 'dashboard') updateDashboard();
+                    if (target === 'dashboard') updateDashboard(); // updateDashboard will now also update shop info display
                     if (target === 'laporan') {
                         updateSalesReport();
                         updatePiutangReport();
@@ -2689,6 +2739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (target === 'pengaturan') {
                         updateLocalStorageUsageDisplay();
                         geminiApiKeyInput.value = userProvidedGeminiApiKey || ""; 
+                        shopImagePreview.src = appSettings.shopImageBase64 || 'https://placehold.co/150x150/e2e8f0/64748b?text=Pratinjau'; // Update preview on settings page load
                     }
                 }
             });
