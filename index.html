@@ -23,6 +23,21 @@
             max-height: 90vh;
             overflow-y: auto;
         }
+         /* Custom scrollbar for modal content if needed */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #c5c5c5;
+            border-radius: 10px;
+        }
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #a5a5a5;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -43,6 +58,9 @@
                 <a href="#produk" class="nav-link flex items-center p-3 rounded-lg text-slate-700 hover:bg-blue-50" data-target="produk">
                     <span class="text-xl">📦</span><span class="ml-4 hidden lg:block">Produk</span>
                 </a>
+                <a href="#pelanggan" class="nav-link flex items-center p-3 rounded-lg text-slate-700 hover:bg-blue-50" data-target="pelanggan">
+                    <span class="text-xl">👥</span><span class="ml-4 hidden lg:block">Pelanggan</span>
+                </a>
                 <a href="#laporan" class="nav-link flex items-center p-3 rounded-lg text-slate-700 hover:bg-blue-50" data-target="laporan">
                     <span class="text-xl">📈</span><span class="ml-4 hidden lg:block">Laporan</span>
                 </a>
@@ -56,7 +74,7 @@
             
             <section id="dashboard" class="page-content active">
                 <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-6">
                     <div class="bg-white p-6 rounded-xl shadow">
                         <h3 class="text-sm font-medium text-slate-500">Penjualan Hari Ini</h3>
                         <p id="penjualanHariIniEl" class="text-3xl font-bold text-blue-600 mt-2">Rp 0</p>
@@ -72,6 +90,10 @@
                     <div class="bg-white p-6 rounded-xl shadow">
                         <h3 class="text-sm font-medium text-slate-500">Produk Terlaris Hari Ini</h3>
                         <p id="produkTerlarisEl" class="text-2xl font-bold mt-2">-</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-sm font-medium text-slate-500">Total Piutang</h3>
+                        <p id="totalPiutangEl" class="text-3xl font-bold text-amber-600 mt-2">Rp 0</p>
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow mb-6">
@@ -152,31 +174,74 @@
                 </div>
             </section>
 
+            <section id="pelanggan" class="page-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                   <h2 class="text-2xl font-bold">Manajemen Pelanggan</h2>
+                   <button id="addCustomerBtn" class="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition">Tambah Pelanggan</button>
+               </div>
+               <div class="bg-white rounded-xl shadow overflow-x-auto">
+                   <table class="w-full text-left min-w-[600px]">
+                       <thead class="bg-slate-100">
+                           <tr>
+                               <th class="p-4 font-semibold">Nama Pelanggan</th>
+                               <th class="p-4 font-semibold">Telepon</th>
+                               <th class="p-4 font-semibold">Alamat</th>
+                               <th class="p-4 font-semibold text-right">Saldo Hutang</th>
+                               <th class="p-4 font-semibold">Aksi</th>
+                           </tr>
+                       </thead>
+                       <tbody id="customerTableBody">
+                       </tbody>
+                   </table>
+               </div>
+           </section>
+
             <section id="laporan" class="page-content hidden">
-                <h2 class="text-2xl font-bold mb-6">Laporan Penjualan & Laba</h2>
-                <div class="bg-white p-6 rounded-xl shadow mb-6">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
-                        <div>
-                            <label for="reportPeriod" class="font-medium">Periode:</label>
-                            <select id="reportPeriod" class="p-2 border rounded-lg">
-                                <option value="daily">Harian</option>
-                                <option value="weekly">Mingguan</option>
-                                <option value="monthly">Bulanan</option>
-                            </select>
+                <h2 class="text-2xl font-bold mb-6">Laporan</h2>
+                 <div class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Laporan Penjualan & Laba per Kategori</h3>
+                    <div class="bg-white p-6 rounded-xl shadow mb-6">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+                            <div>
+                                <label for="reportPeriod" class="font-medium">Periode:</label>
+                                <select id="reportPeriod" class="p-2 border rounded-lg">
+                                    <option value="daily">Harian</option>
+                                    <option value="weekly">Mingguan</option>
+                                    <option value="monthly">Bulanan</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="reportDate" class="font-medium">Tanggal:</label>
+                                <input type="date" id="reportDate" class="p-2 border rounded-lg">
+                            </div>
                         </div>
-                        <div>
-                            <label for="reportDate" class="font-medium">Tanggal:</label>
-                            <input type="date" id="reportDate" class="p-2 border rounded-lg">
+                         <div class="chart-container" style="height: 350px;">
+                            <canvas id="salesReportChart"></canvas>
                         </div>
                     </div>
-                     <div class="chart-container" style="height: 350px;">
-                        <canvas id="salesReportChart"></canvas>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-lg font-semibold mb-4">Detail Transaksi Periode Terpilih</h3>
+                        <div id="reportDetailsTableContainer" class="overflow-x-auto">
+                            <p class="text-slate-500">Pilih periode dan tanggal untuk melihat detail.</p>
+                        </div>
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow">
-                    <h3 class="text-lg font-semibold mb-4">Detail Laporan Periode Terpilih</h3>
-                    <div id="reportDetailsTableContainer" class="overflow-x-auto">
-                        <p class="text-slate-500">Pilih periode dan tanggal untuk melihat detail.</p>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Laporan Piutang Pelanggan</h3>
+                    <div class="bg-white p-6 rounded-xl shadow overflow-x-auto">
+                        <table class="w-full text-left min-w-[500px]">
+                            <thead class="bg-slate-100">
+                                <tr>
+                                    <th class="p-4 font-semibold">Nama Pelanggan</th>
+                                    <th class="p-4 font-semibold">Telepon</th>
+                                    <th class="p-4 font-semibold text-right">Total Hutang</th>
+                                </tr>
+                            </thead>
+                            <tbody id="piutangTableBody">
+                                <tr><td colspan="3" class="p-4 text-center text-slate-500">Tidak ada piutang.</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -211,13 +276,39 @@
     <div id="paymentModal" class="modal-backdrop hidden">
         <div class="bg-white w-full max-w-md p-8 rounded-xl shadow-lg m-4 modal-content">
             <h2 class="text-2xl font-bold text-center mb-6">Pembayaran</h2>
+            
+            <div class="mb-4">
+                <label for="customerSelectPayment" class="block text-sm font-medium text-slate-700 mb-1">Pelanggan (Opsional)</label>
+                <select id="customerSelectPayment" class="w-full p-3 border rounded-lg bg-white">
+                    <option value="">-- Pelanggan Umum --</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Tipe Pembayaran</label>
+                <div class="flex gap-4">
+                    <label class="flex-1">
+                        <input type="radio" name="paymentType" value="lunas" class="sr-only peer" checked>
+                        <div class="p-3 border rounded-lg text-center cursor-pointer peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600">Lunas</div>
+                    </label>
+                    <label class="flex-1">
+                        <input type="radio" name="paymentType" value="cicil" class="sr-only peer">
+                        <div class="p-3 border rounded-lg text-center cursor-pointer peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500">Cicil/Kasbon</div>
+                    </label>
+                </div>
+            </div>
+            
             <div class="mb-4">
                 <p class="text-lg text-slate-600">Total Tagihan</p>
                 <p id="modalTotal" class="text-4xl font-bold text-blue-600">Rp 0</p>
             </div>
             <div class="mb-4">
-                <label for="amountPaid" class="block text-sm font-medium text-slate-700 mb-1">Uang Tunai</label>
+                <label for="amountPaid" id="amountPaidLabel" class="block text-sm font-medium text-slate-700 mb-1">Uang Tunai</label>
                 <input type="number" id="amountPaid" placeholder="Masukkan jumlah uang" class="w-full p-4 border-2 rounded-lg text-2xl focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div id="sisaTagihanSection" class="mb-4 hidden">
+                <p class="text-sm text-slate-600">Sisa Akan Dicatat Sebagai Hutang</p>
+                <p id="sisaTagihanValue" class="text-2xl font-bold text-red-600">Rp 0</p>
             </div>
             <div class="mb-6">
                 <p class="text-lg text-slate-600">Kembalian</p>
@@ -241,7 +332,7 @@
                 </div>
                 <div>
                     <label for="productCategoryModal" class="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
-                    <select id="productCategoryModal" class="w-full p-3 border rounded-lg" required>
+                    <select id="productCategoryModal" class="w-full p-3 border rounded-lg bg-white" required>
                     </select>
                 </div>
                  <div>
@@ -305,6 +396,31 @@
         </div>
     </div>
 
+    <div id="customerModal" class="modal-backdrop hidden">
+        <div class="bg-white w-full max-w-lg p-8 rounded-xl shadow-lg m-4 modal-content">
+            <h2 id="customerModalTitle" class="text-2xl font-bold mb-6">Tambah Pelanggan Baru</h2>
+            <form id="customerForm" class="space-y-4">
+                <input type="hidden" id="customerId">
+                <div>
+                    <label for="customerName" class="block text-sm font-medium text-slate-700 mb-1">Nama Pelanggan</label>
+                    <input type="text" id="customerName" class="w-full p-3 border rounded-lg" required>
+                </div>
+                <div>
+                    <label for="customerPhone" class="block text-sm font-medium text-slate-700 mb-1">No. Telepon</label>
+                    <input type="tel" id="customerPhone" class="w-full p-3 border rounded-lg">
+                </div>
+                 <div>
+                    <label for="customerAddress" class="block text-sm font-medium text-slate-700 mb-1">Alamat</label>
+                    <textarea id="customerAddress" class="w-full p-3 border rounded-lg" rows="3"></textarea>
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" id="closeCustomerModalBtn" class="w-full bg-slate-200 text-slate-800 p-3 rounded-lg font-bold hover:bg-slate-300 transition">Batal</button>
+                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Simpan Pelanggan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -328,6 +444,11 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     
     let productCategories = ["Minuman", "Makanan Ringan", "Sembako", "Bumbu Dapur", "Perlengkapan Mandi", "Obat Ringan", "Lainnya"];
+    let pelangganList = [
+        { id: 1, nama: "Budi Santoso", telepon: "08123456789", alamat: "Jl. Mawar No. 1", saldoHutang: 0 },
+        { id: 2, nama: "Siti Aminah", telepon: "08765432100", alamat: "Jl. Melati No. 2A", saldoHutang: 25000 },
+        { id: 3, nama: "Ahmad Yani", telepon: "08555000111", alamat: "Gg. Kenanga III", saldoHutang: 0 },
+    ];
 
     let cart = [];
     let dailyTransactions = []; 
@@ -341,6 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const paymentModal = document.getElementById('paymentModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const amountPaidInput = document.getElementById('amountPaid');
+    const amountPaidLabel = document.getElementById('amountPaidLabel');
     const changeAmountEl = document.getElementById('changeAmount');
     const modalTotalEl = document.getElementById('modalTotal');
     const completeTransactionBtn = document.getElementById('completeTransactionBtn');
@@ -356,6 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const penjualanHariIniEl = document.getElementById('penjualanHariIniEl');
     const labaHariIniEl = document.getElementById('labaHariIniEl');
+    const totalPiutangEl = document.getElementById('totalPiutangEl');
     const transaksiHariIniEl = document.getElementById('transaksiHariIniEl');
     const produkTerlarisEl = document.getElementById('produkTerlarisEl');
     const stokKritisListEl = document.getElementById('stokKritisList');
@@ -364,6 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportPeriodEl = document.getElementById('reportPeriod');
     const reportDateEl = document.getElementById('reportDate');
     const reportDetailsTableContainerEl = document.getElementById('reportDetailsTableContainer');
+    const piutangTableBodyEl = document.getElementById('piutangTableBody');
     const settingsForm = document.getElementById('settingsForm');
     const settingsMessage = document.getElementById('settingsMessage');
 
@@ -380,10 +504,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const editCategoryForm = document.getElementById('editCategoryForm');
     const cancelEditCategoryBtn = document.getElementById('cancelEditCategoryBtn');
 
+    const addCustomerBtn = document.getElementById('addCustomerBtn');
+    const customerModal = document.getElementById('customerModal');
+    const customerModalTitle = document.getElementById('customerModalTitle');
+    const customerForm = document.getElementById('customerForm');
+    const closeCustomerModalBtn = document.getElementById('closeCustomerModalBtn');
+    const customerTableBody = document.getElementById('customerTableBody');
+    const customerSelectPaymentEl = document.getElementById('customerSelectPayment');
+    const paymentTypeRadios = document.querySelectorAll('input[name="paymentType"]');
+    const sisaTagihanSection = document.getElementById('sisaTagihanSection');
+    const sisaTagihanValueEl = document.getElementById('sisaTagihanValue');
+
 
     const populateCategories = () => {
         const uniqueCategories = [...new Set(mockProducts.map(p => p.category).concat(productCategories))].sort();
-        productCategories = uniqueCategories.filter(cat => cat && cat.trim() !== ""); // Ensure no empty/null categories
+        productCategories = uniqueCategories.filter(cat => cat && cat.trim() !== ""); 
 
         categoryFilterEl.innerHTML = '<option value="all">Semua Kategori</option>';
         productCategoryModalEl.innerHTML = ''; 
@@ -436,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 originalCategoryNameToEditInput.value = categoryToEdit;
                 editCategoryInputName.value = categoryToEdit;
                 editCategorySection.classList.remove('hidden');
-                addCategoryForm.parentElement.classList.add('hidden'); // Hide add form
+                addCategoryForm.parentElement.classList.add('hidden'); 
                 editCategoryInputName.focus();
             });
         });
@@ -459,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showCustomConfirm(`Apakah Anda yakin ingin menghapus kategori "${categoryName}"? Tindakan ini tidak dapat diurungkan.`, () => {
             productCategories = productCategories.filter(cat => cat !== categoryName);
             populateCategories();
-            updateSalesReport(); // Refresh report if category is removed
+            updateSalesReport(); 
             showCustomAlert(`Kategori "${categoryName}" berhasil dihapus.`, "Sukses");
         });
     };
@@ -539,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editCategorySection.classList.add('hidden');
         addCategoryForm.parentElement.classList.remove('hidden');
     });
-    
+
     const renderProducts = (filter = '', category = 'all') => {
         productListEl.innerHTML = '';
         const filteredProducts = mockProducts.filter(p => {
@@ -591,52 +726,79 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const addToCart = (productId) => {
-        const product = mockProducts.find(p => p.id === productId);
-        if (!product || product.stock <= 0) {
+    const renderCustomerTable = () => {
+        customerTableBody.innerHTML = '';
+        if (pelangganList.length === 0) {
+            customerTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">Belum ada pelanggan.</td></tr>';
             return;
         }
-        const cartItem = cart.find(item => item.id === productId);
+        pelangganList.forEach(c => {
+            const row = document.createElement('tr');
+            row.className = 'border-b hover:bg-slate-50 transition-colors';
+            row.innerHTML = `
+                <td class="p-4">${c.nama}</td>
+                <td class="p-4">${c.telepon || '-'}</td>
+                <td class="p-4">${c.alamat || '-'}</td>
+                <td class="p-4 text-right ${c.saldoHutang > 0 ? 'text-red-600 font-semibold' : ''}">${formatRupiah(c.saldoHutang)}</td>
+                <td class="p-4">
+                    <button class="text-blue-600 hover:underline mr-2 text-sm" data-id="${c.id}" onclick="window.app.editCustomer(event)">Edit</button>
+                </td>
+            `;
+            customerTableBody.appendChild(row);
+        });
+    };
+    
+    const populateCustomerDropdown = () => {
+        customerSelectPaymentEl.innerHTML = '<option value="">-- Pelanggan Umum --</option>';
+        pelangganList.forEach(c => {
+            const option = document.createElement('option');
+            option.value = c.id;
+            option.textContent = c.nama;
+            customerSelectPaymentEl.appendChild(option);
+        });
+    };
 
-        if (cartItem) {
-            if (cartItem.quantity < product.stock) {
-                 cartItem.quantity++;
-            } else {
-                displayTemporaryMessage(cartItemsEl, "Stok produk tidak mencukupi di keranjang.", "text-red-500");
+    addCustomerBtn.addEventListener('click', () => {
+        customerModalTitle.innerText = 'Tambah Pelanggan Baru';
+        customerForm.reset();
+        document.getElementById('customerId').value = '';
+        customerModal.classList.remove('hidden');
+    });
+
+    closeCustomerModalBtn.addEventListener('click', () => {
+        customerModal.classList.add('hidden');
+    });
+
+    customerForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('customerId').value;
+        const customerData = {
+            nama: document.getElementById('customerName').value.trim(),
+            telepon: document.getElementById('customerPhone').value.trim(),
+            alamat: document.getElementById('customerAddress').value.trim(),
+        };
+
+        if (!customerData.nama) {
+            showCustomAlert("Nama pelanggan tidak boleh kosong.", "Error");
+            return;
+        }
+
+        if (id) { // Edit
+            const index = pelangganList.findIndex(c => c.id === parseInt(id));
+            if (index > -1) {
+                pelangganList[index] = { ...pelangganList[index], ...customerData };
             }
-        } else {
-            cart.push({ ...product, quantity: 1 });
+        } else { // Add
+            customerData.id = Date.now();
+            customerData.saldoHutang = 0;
+            pelangganList.unshift(customerData);
         }
-        renderCart();
-    };
-    
-    const renderCart = () => {
-        cartItemsEl.innerHTML = '';
-        if (cart.length === 0) {
-            cartItemsEl.innerHTML = '<p class="text-slate-400 text-center">Keranjang masih kosong.</p>';
-            payButton.disabled = true;
-        } else {
-            cart.forEach(item => {
-                const cartItemEl = document.createElement('div');
-                cartItemEl.className = 'flex items-center justify-between py-2 border-b border-slate-100 last:border-b-0';
-                cartItemEl.innerHTML = `
-                    <div class="flex-1 mr-2">
-                        <p class="font-semibold text-sm">${item.name}</p>
-                        <p class="text-xs text-slate-500">${formatRupiah(item.price)} x ${item.quantity}</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${item.id}, -1)">-</button>
-                        <span class="w-5 text-center">${item.quantity}</span>
-                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${item.id}, 1)">+</button>
-                    </div>
-                `;
-                cartItemsEl.appendChild(cartItemEl);
-            });
-            payButton.disabled = false;
-        }
-        updateCartTotal();
-    };
-    
+        customerModal.classList.add('hidden');
+        renderCustomerTable();
+        populateCustomerDropdown();
+        updatePiutangReport();
+    });
+
     window.app = {
         updateQuantity: (productId, change) => {
             const cartItem = cart.find(item => item.id === productId);
@@ -685,7 +847,65 @@ document.addEventListener('DOMContentLoaded', () => {
                     populateCategories(); 
                 }
             });
+        },
+        editCustomer: (event) => {
+            const customerId = parseInt(event.target.dataset.id);
+            const customer = pelangganList.find(c => c.id === customerId);
+            if (customer) {
+                customerModalTitle.innerText = "Edit Data Pelanggan";
+                document.getElementById('customerId').value = customer.id;
+                document.getElementById('customerName').value = customer.nama;
+                document.getElementById('customerPhone').value = customer.telepon;
+                document.getElementById('customerAddress').value = customer.alamat;
+                customerModal.classList.remove('hidden');
+            }
         }
+    };
+
+    const addToCart = (productId) => {
+        const product = mockProducts.find(p => p.id === productId);
+        if (!product || product.stock <= 0) {
+            return;
+        }
+        const cartItem = cart.find(item => item.id === productId);
+
+        if (cartItem) {
+            if (cartItem.quantity < product.stock) {
+                 cartItem.quantity++;
+            } else {
+                displayTemporaryMessage(cartItemsEl, "Stok produk tidak mencukupi di keranjang.", "text-red-500");
+            }
+        } else {
+            cart.push({ ...product, quantity: 1 });
+        }
+        renderCart();
+    };
+    
+    const renderCart = () => {
+        cartItemsEl.innerHTML = '';
+        if (cart.length === 0) {
+            cartItemsEl.innerHTML = '<p class="text-slate-400 text-center">Keranjang masih kosong.</p>';
+            payButton.disabled = true;
+        } else {
+            cart.forEach(item => {
+                const cartItemEl = document.createElement('div');
+                cartItemEl.className = 'flex items-center justify-between py-2 border-b border-slate-100 last:border-b-0';
+                cartItemEl.innerHTML = `
+                    <div class="flex-1 mr-2">
+                        <p class="font-semibold text-sm">${item.name}</p>
+                        <p class="text-xs text-slate-500">${formatRupiah(item.price)} x ${item.quantity}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${item.id}, -1)">-</button>
+                        <span class="w-5 text-center">${item.quantity}</span>
+                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${item.id}, 1)">+</button>
+                    </div>
+                `;
+                cartItemsEl.appendChild(cartItemEl);
+            });
+            payButton.disabled = false;
+        }
+        updateCartTotal();
     };
     
     const updateCartTotal = () => {
@@ -698,51 +918,100 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cart.length === 0) return;
         const total = updateCartTotal();
         modalTotalEl.innerText = formatRupiah(total);
-        amountPaidInput.value = '';
+        amountPaidInput.value = ''; 
         changeAmountEl.innerText = formatRupiah(0);
-        completeTransactionBtn.disabled = true;
+        sisaTagihanValueEl.innerText = formatRupiah(0);
+        sisaTagihanSection.classList.add('hidden');
+        amountPaidLabel.innerText = "Uang Tunai";
+        document.querySelector('input[name="paymentType"][value="lunas"]').checked = true; 
+        
+        completeTransactionBtn.disabled = true; 
+        
         paymentModal.classList.remove('hidden');
         amountPaidInput.focus();
+        updatePaymentModalUI(); 
     });
 
     closeModalBtn.addEventListener('click', () => paymentModal.classList.add('hidden'));
     
-    amountPaidInput.addEventListener('input', () => {
-        const total = updateCartTotal();
-        const paid = parseFloat(amountPaidInput.value) || 0;
-        const change = paid - total;
-        changeAmountEl.innerText = formatRupiah(change >= 0 ? change : 0);
-        completeTransactionBtn.disabled = paid < total;
+    paymentTypeRadios.forEach(radio => {
+        radio.addEventListener('click', updatePaymentModalUI);
     });
+    
+    function updatePaymentModalUI() {
+        const selectedPaymentType = document.querySelector('input[name="paymentType"]:checked').value;
+        const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const paid = parseFloat(amountPaidInput.value) || 0;
+
+        if (selectedPaymentType === 'cicil') {
+            amountPaidLabel.innerText = "Jumlah Dibayar (Cicil)";
+            sisaTagihanSection.classList.remove('hidden');
+            const sisaTagihan = total - paid;
+            sisaTagihanValueEl.innerText = formatRupiah(sisaTagihan > 0 ? sisaTagihan : 0);
+            changeAmountEl.innerText = formatRupiah(0); 
+            completeTransactionBtn.disabled = false; 
+        } else { // Lunas
+            amountPaidLabel.innerText = "Uang Tunai";
+            sisaTagihanSection.classList.add('hidden');
+            const change = paid - total;
+            changeAmountEl.innerText = formatRupiah(change >= 0 ? change : 0);
+            completeTransactionBtn.disabled = paid < total;
+        }
+    }
+
+    amountPaidInput.addEventListener('input', updatePaymentModalUI);
 
     completeTransactionBtn.addEventListener('click', () => {
         if (cart.length === 0) return;
-        let currentTransactionProfit = 0;
-        let currentTransactionTotal = 0;
+        
+        const selectedCustomerId = customerSelectPaymentEl.value;
+        const paymentType = document.querySelector('input[name="paymentType"]:checked').value;
+        const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const amountPaid = parseFloat(amountPaidInput.value) || 0;
 
+        if (paymentType === 'cicil' && !selectedCustomerId) {
+            showCustomAlert("Silakan pilih pelanggan untuk transaksi cicilan/kasbon.", "Peringatan");
+            return;
+        }
+        
+        let currentTransactionProfit = 0;
         cart.forEach(cartItem => {
             const product = mockProducts.find(p => p.id === cartItem.id);
             if(product) {
                 product.stock -= cartItem.quantity;
                 currentTransactionProfit += (product.price - product.hargaBeli) * cartItem.quantity;
-                currentTransactionTotal += product.price * cartItem.quantity;
             }
         });
         
+        const sisaBayar = paymentType === 'cicil' ? Math.max(0, totalAmount - amountPaid) : 0;
+
         dailyTransactions.push({
             id: `INV/${new Date().toISOString().slice(0,10).replace(/-/g,'')}/${Date.now().toString().slice(-5)}`,
             items: JSON.parse(JSON.stringify(cart)), 
-            totalAmount: currentTransactionTotal,
+            totalAmount: totalAmount,
             profit: currentTransactionProfit,
-            timestamp: new Date()
+            timestamp: new Date(),
+            pelangganId: selectedCustomerId || null,
+            tipePembayaran: paymentType,
+            jumlahBayar: amountPaid,
+            sisaBayar: sisaBayar
         });
+
+        if (paymentType === 'cicil' && selectedCustomerId && sisaBayar > 0) {
+            const customer = pelangganList.find(c => c.id === parseInt(selectedCustomerId));
+            if (customer) {
+                customer.saldoHutang += sisaBayar;
+            }
+        }
 
         cart = [];
         renderCart();
         renderProducts(); 
         renderProductTable();
+        renderCustomerTable();
         updateDashboard();
         updateSalesReport();
+        updatePiutangReport();
         paymentModal.classList.add('hidden');
     });
 
@@ -816,10 +1085,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalSalesToday = todaysTransactions.reduce((sum, t) => sum + t.totalAmount, 0);
         const totalProfitToday = todaysTransactions.reduce((sum, t) => sum + t.profit, 0);
+        const totalPiutang = pelangganList.reduce((sum, c) => sum + c.saldoHutang, 0);
         
-        penjualanHariIniEl.innerText = formatRupiah(totalSalesToday);
-        labaHariIniEl.innerText = formatRupiah(totalProfitToday);
-        transaksiHariIniEl.innerText = todaysTransactions.length;
+        if(penjualanHariIniEl) penjualanHariIniEl.innerText = formatRupiah(totalSalesToday);
+        if(labaHariIniEl) labaHariIniEl.innerText = formatRupiah(totalProfitToday);
+        if(totalPiutangEl) totalPiutangEl.innerText = formatRupiah(totalPiutang);
+        if(transaksiHariIniEl) transaksiHariIniEl.innerText = todaysTransactions.length;
 
         const soldItemsCount = {};
         todaysTransactions.forEach(t => {
@@ -828,32 +1099,37 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         const sortedSoldItems = Object.entries(soldItemsCount).sort((a, b) => b[1] - a[1]);
-        produkTerlarisEl.innerText = sortedSoldItems.length > 0 ? `${sortedSoldItems[0][0]} (${sortedSoldItems[0][1]})` : '-';
+        if(produkTerlarisEl) produkTerlarisEl.innerText = sortedSoldItems.length > 0 ? `${sortedSoldItems[0][0]} (${sortedSoldItems[0][1]})` : '-';
         
-        stokKritisListEl.innerHTML = '';
-        const criticalStockProducts = mockProducts.filter(p => p.stock <= 5).sort((a,b) => a.stock - b.stock).slice(0, 5);
-        if (criticalStockProducts.length > 0) {
-            criticalStockProducts.forEach(p => {
-                const li = document.createElement('li');
-                li.className = 'flex justify-between items-center text-sm';
-                li.innerHTML = `<span>${p.name}</span><span class="font-bold text-red-500">${p.stock} pcs</span>`;
-                stokKritisListEl.appendChild(li);
-            });
-        } else {
-            stokKritisListEl.innerHTML = '<li class="text-slate-400 text-sm">Tidak ada stok kritis.</li>';
+        if(stokKritisListEl) {
+            stokKritisListEl.innerHTML = '';
+            const criticalStockProducts = mockProducts.filter(p => p.stock <= 5).sort((a,b) => a.stock - b.stock).slice(0, 5);
+            if (criticalStockProducts.length > 0) {
+                criticalStockProducts.forEach(p => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center text-sm';
+                    li.innerHTML = `<span>${p.name}</span><span class="font-bold text-red-500">${p.stock} pcs</span>`;
+                    stokKritisListEl.appendChild(li);
+                });
+            } else {
+                stokKritisListEl.innerHTML = '<li class="text-slate-400 text-sm">Tidak ada stok kritis.</li>';
+            }
         }
 
-        transaksiTerakhirListEl.innerHTML = '';
-        const last5Transactions = dailyTransactions.slice(-5).reverse();
-        if (last5Transactions.length > 0) {
-            last5Transactions.forEach(t => {
-                const li = document.createElement('li');
-                li.className = 'flex justify-between items-center text-sm';
-                li.innerHTML = `<span>${t.id}</span><span class="font-semibold text-emerald-600">${formatRupiah(t.totalAmount)}</span>`;
-                transaksiTerakhirListEl.appendChild(li);
-            });
-        } else {
-            transaksiTerakhirListEl.innerHTML = '<li class="text-slate-400 text-sm">Belum ada transaksi.</li>';
+        if(transaksiTerakhirListEl) {
+            transaksiTerakhirListEl.innerHTML = '';
+            const last5Transactions = dailyTransactions.slice(-5).reverse();
+            if (last5Transactions.length > 0) {
+                last5Transactions.forEach(t => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center text-sm';
+                    const customerName = t.pelangganId ? pelangganList.find(p => p.id === parseInt(t.pelangganId))?.nama : 'Umum';
+                    li.innerHTML = `<span>${t.id} (${customerName})</span><span class="font-semibold ${t.tipePembayaran === 'cicil' ? 'text-amber-600' : 'text-emerald-600'}">${formatRupiah(t.totalAmount)}</span>`;
+                    transaksiTerakhirListEl.appendChild(li);
+                });
+            } else {
+                transaksiTerakhirListEl.innerHTML = '<li class="text-slate-400 text-sm">Belum ada transaksi.</li>';
+            }
         }
     };
     
@@ -908,6 +1184,7 @@ document.addEventListener('DOMContentLoaded', () => {
             salesTrendChartInstance.update();
         } else {
             const ctx = document.getElementById('salesTrendChart').getContext('2d');
+            if (!ctx) return; 
             salesTrendChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: data,
@@ -1026,6 +1303,7 @@ document.addEventListener('DOMContentLoaded', () => {
             salesReportChartInstance.update();
         } else {
             const ctx = document.getElementById('salesReportChart').getContext('2d');
+            if (!ctx) return;
             salesReportChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: chartData,
@@ -1058,9 +1336,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <tr>
                     <th class="p-3 font-semibold">ID Transaksi</th>
                     <th class="p-3 font-semibold">Waktu</th>
+                    <th class="p-3 font-semibold">Pelanggan</th>
                     <th class="p-3 font-semibold">Item</th>
-                    <th class="p-3 font-semibold text-right">Total Penjualan</th>
-                    <th class="p-3 font-semibold text-right">Total Laba</th>
+                    <th class="p-3 font-semibold">Tipe Bayar</th>
+                    <th class="p-3 font-semibold text-right">Total</th>
+                    <th class="p-3 font-semibold text-right">Dibayar</th>
+                    <th class="p-3 font-semibold text-right">Sisa</th>
+                    <th class="p-3 font-semibold text-right">Laba</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -1068,19 +1350,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = table.querySelector('tbody');
         transactions.forEach(t => {
             const itemsString = t.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
+            const customerName = t.pelangganId ? (pelangganList.find(p => p.id === parseInt(t.pelangganId))?.nama || 'N/A') : 'Umum';
             const row = document.createElement('tr');
             row.className = 'border-b hover:bg-slate-50';
             row.innerHTML = `
                 <td class="p-3">${t.id}</td>
                 <td class="p-3">${new Date(t.timestamp).toLocaleString('id-ID')}</td>
+                <td class="p-3">${customerName}</td>
                 <td class="p-3 text-sm">${itemsString}</td>
+                <td class="p-3">${t.tipePembayaran === 'cicil' ? 'Cicil' : 'Lunas'}</td>
                 <td class="p-3 text-right">${formatRupiah(t.totalAmount)}</td>
+                <td class="p-3 text-right">${formatRupiah(t.jumlahBayar)}</td>
+                <td class="p-3 text-right ${t.sisaBayar > 0 ? 'text-red-600' : ''}">${formatRupiah(t.sisaBayar)}</td>
                 <td class="p-3 text-right">${formatRupiah(t.profit)}</td>
             `;
             tbody.appendChild(row);
         });
         reportDetailsTableContainerEl.appendChild(table);
     };
+
+    const updatePiutangReport = () => {
+        piutangTableBodyEl.innerHTML = '';
+        const customersWithDebt = pelangganList.filter(c => c.saldoHutang > 0);
+        if (customersWithDebt.length === 0) {
+            piutangTableBodyEl.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-500">Tidak ada pelanggan yang memiliki hutang.</td></tr>';
+            return;
+        }
+        customersWithDebt.forEach(c => {
+            const row = document.createElement('tr');
+            row.className = 'border-b hover:bg-slate-50';
+            row.innerHTML = `
+                <td class="p-4">${c.nama}</td>
+                <td class="p-4">${c.telepon || '-'}</td>
+                <td class="p-4 text-right text-red-600 font-semibold">${formatRupiah(c.saldoHutang)}</td>
+            `;
+            piutangTableBodyEl.appendChild(row);
+        });
+    };
+
 
     reportPeriodEl.addEventListener('change', updateSalesReport);
     reportDateEl.addEventListener('change', updateSalesReport);
@@ -1182,18 +1489,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (page.id === target) {
                     page.classList.remove('hidden');
                     if (target === 'dashboard') updateDashboard();
-                    if (target === 'laporan') updateSalesReport();
+                    if (target === 'laporan') {
+                        updateSalesReport();
+                        updatePiutangReport();
+                    }
+                    if (target === 'pelanggan') renderCustomerTable();
                 }
             });
         });
     });
     
     populateCategories();
+    populateCustomerDropdown();
     renderProducts();
     renderCart();
     renderProductTable();
+    renderCustomerTable();
     updateDashboard();
     updateSalesReport(); 
+    updatePiutangReport();
 });
 </script>
 
