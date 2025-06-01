@@ -302,7 +302,10 @@
                         </div>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow">
-                        <h3 class="text-lg font-semibold mb-4">Detail Transaksi Periode Terpilih</h3>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold">Detail Transaksi Periode Terpilih</h3>
+                            <button id="exportReportBtn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600 transition text-sm">📄 Ekspor Detail ke CSV</button>
+                        </div>
                         <div id="reportDetailsTableContainer" class="overflow-x-auto">
                             <p class="text-slate-500">Pilih periode dan tanggal untuk melihat detail.</p>
                         </div>
@@ -657,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let userProvidedGeminiApiKey = ''; 
     let lastTransactionForReceipt = null; 
     let barcodeScannerStream = null; 
-    let barcodeScanTargetInputId = null; // To determine where the scanned barcode should go
+    let barcodeScanTargetInputId = null; 
 
     const formatRupiah = (number) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
@@ -848,6 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const barcodeScannerViewport = document.getElementById('barcodeScannerViewport');
     const barcodeScannerStatusEl = document.getElementById('barcodeScannerStatus');
     const closeBarcodeScannerModalBtn = document.getElementById('closeBarcodeScannerModalBtn');
+    const exportReportBtn = document.getElementById('exportReportBtn');
 
 
     if (addCustomTransactionBtn) {
@@ -1894,11 +1898,11 @@ document.addEventListener('DOMContentLoaded', () => {
         Quagga.stop();
         barcodeScannerModal.classList.add('hidden');
         barcodeScannerStatusEl.textContent = "Arahkan kamera ke barcode...";
-        barcodeScanTargetInputId = null; // Reset target
+        barcodeScanTargetInputId = null; 
     }
 
     function startBarcodeScanner(targetInputId = null) {
-        barcodeScanTargetInputId = targetInputId; // Set where the scan result should go
+        barcodeScanTargetInputId = targetInputId; 
         barcodeScannerModal.classList.remove('hidden');
         barcodeScannerStatusEl.textContent = "Memulai kamera...";
         
@@ -1946,10 +1950,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (scanBarcodeBtn) { // Scanner button on Kasir page
-        scanBarcodeBtn.addEventListener('click', () => startBarcodeScanner(null)); // null target means add to cart
+    if (scanBarcodeBtn) { 
+        scanBarcodeBtn.addEventListener('click', () => startBarcodeScanner(null)); 
     }
-    if (scanBarcodeForProductBtn) { // Scanner button in Product Modal
+    if (scanBarcodeForProductBtn) { 
         scanBarcodeForProductBtn.addEventListener('click', () => startBarcodeScanner('productBarcode'));
     }
 
@@ -1958,12 +1962,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const code = result.codeResult.code;
         barcodeScannerStatusEl.textContent = "Barcode terdeteksi: " + code;
         
-        if (barcodeScanTargetInputId) { // If target is an input field (e.g., product barcode)
+        if (barcodeScanTargetInputId) { 
             const targetInput = document.getElementById(barcodeScanTargetInputId);
             if (targetInput) {
                 targetInput.value = code;
             }
-        } else { // Default behavior: find product and add to cart
+        } else { 
             const product = mockProducts.find(p => p.kodeBarcode === code);
             if (product) {
                 addToCart(product.id);
@@ -2317,6 +2321,83 @@ document.addEventListener('DOMContentLoaded', () => {
             piutangTableBodyEl.appendChild(row);
         });
     };
+
+    if (exportReportBtn) {
+        exportReportBtn.addEventListener('click', () => {
+            const period = reportPeriodEl.value;
+            const selectedDate = new Date(reportDateEl.value || new Date());
+            let transactionsToExport = [];
+
+            if (period === 'daily') {
+                const dateStr = selectedDate.toDateString();
+                transactionsToExport = dailyTransactions.filter(t => new Date(t.timestamp).toDateString() === dateStr);
+            } else if (period === 'weekly') {
+                const startOfWeek = new Date(selectedDate);
+                startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay() + (selectedDate.getDay() === 0 ? -6 : 1)); 
+                startOfWeek.setHours(0,0,0,0);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                endOfWeek.setHours(23,59,59,999);
+                transactionsToExport = dailyTransactions.filter(t => {
+                    const tDate = new Date(t.timestamp);
+                    return tDate >= startOfWeek && tDate <= endOfWeek;
+                });
+            } else if (period === 'monthly') {
+                const year = selectedDate.getFullYear();
+                const month = selectedDate.getMonth();
+                transactionsToExport = dailyTransactions.filter(t => {
+                    const tDate = new Date(t.timestamp);
+                    return tDate.getFullYear() === year && tDate.getMonth() === month;
+                });
+            }
+
+            if (transactionsToExport.length === 0) {
+                showCustomAlert("Tidak ada data transaksi untuk diekspor pada periode ini.", "Info");
+                return;
+            }
+
+            const headers = ["ID Transaksi", "Waktu", "Pelanggan", "Item/Deskripsi", "Tipe Bayar", "Total", "Dibayar", "Sisa", "Laba"];
+            let csvContent = headers.join(",") + "\r\n";
+
+            transactionsToExport.forEach(t => {
+                let itemsString = t.deskripsi || ''; 
+                if (t.items && t.items.length > 0) {
+                    itemsString = t.items.map(item => `${item.name} (x${item.quantity})`).join('; '); // Use semicolon for items within a cell
+                }
+                const customerName = t.pelangganId ? (pelangganList.find(p => p.id === parseInt(t.pelangganId))?.nama || 'N/A') : 'Umum';
+                let tipeBayarDisplay = t.tipePembayaran;
+                if (t.tipePembayaran === 'lunas') tipeBayarDisplay = 'Lunas';
+                else if (t.tipePembayaran === 'cicil') tipeBayarDisplay = 'Cicil';
+                else if (t.tipePembayaran === 'PEMBAYARAN_HUTANG') tipeBayarDisplay = 'Bayar Hutang';
+
+                const row = [
+                    t.id,
+                    new Date(t.timestamp).toLocaleString('id-ID'),
+                    `"${customerName.replace(/"/g, '""')}"`, // Escape quotes in customer name
+                    `"${itemsString.replace(/"/g, '""')}"`, // Escape quotes in items string
+                    tipeBayarDisplay,
+                    t.totalAmount,
+                    t.jumlahBayar,
+                    t.sisaBayar,
+                    t.profit
+                ];
+                csvContent += row.join(",") + "\r\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `laporan_transaksi_${period}_${selectedDate.toISOString().slice(0,10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+        });
+    }
 
 
     reportPeriodEl.addEventListener('change', updateSalesReport);
