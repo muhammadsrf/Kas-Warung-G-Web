@@ -275,6 +275,20 @@
                      <div id="settingsMessage" class="mt-4 text-center"></div>
 
                     <hr class="my-8">
+                     <h3 class="text-lg font-semibold mb-6">Pengaturan API Key Gemini</h3>
+                     <div class="space-y-4 mb-8">
+                        <div>
+                            <label for="geminiApiKeyInput" class="block text-sm font-medium text-slate-700 mb-1">API Key Gemini Anda</label>
+                            <div class="flex gap-3">
+                                <input type="password" id="geminiApiKeyInput" placeholder="Masukkan API Key Gemini Anda" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                <button id="saveGeminiApiKeyBtn" class="bg-purple-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">Simpan Key</button>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">API Key ini disimpan di localStorage browser Anda. Jaga kerahasiaannya.</p>
+                        </div>
+                     </div>
+
+
+                    <hr class="my-8">
 
                     <h3 class="text-lg font-semibold mb-6">Manajemen Data Aplikasi</h3>
                     <div class="space-y-4 mb-8">
@@ -459,6 +473,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Core state variables declared first
     let mockProducts, productCategories, pelangganList, cart, dailyTransactions, appSettings;
+    let userProvidedGeminiApiKey = ''; // Variable to hold user-inputted API Key
 
     const formatRupiah = (number) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
@@ -469,7 +484,8 @@ document.addEventListener('DOMContentLoaded', () => {
         CATEGORIES: 'kasWarung_categories',
         CUSTOMERS: 'kasWarung_customers',
         TRANSACTIONS: 'kasWarung_transactions',
-        SETTINGS: 'kasWarung_appSettings'
+        SETTINGS: 'kasWarung_appSettings',
+        GEMINI_API_KEY: 'kasWarung_geminiApiKey' // New key for Gemini API Key
     };
 
     // Initialization function for core data
@@ -506,6 +522,12 @@ document.addEventListener('DOMContentLoaded', () => {
             shopAddress: "Jl. Merdeka No. 17, Jakarta",
             shopPhone: "081234567890"
         };
+
+        const storedGeminiApiKey = localStorage.getItem(LS_KEYS.GEMINI_API_KEY);
+        if (storedGeminiApiKey) {
+            userProvidedGeminiApiKey = storedGeminiApiKey;
+            document.getElementById('geminiApiKeyInput').value = userProvidedGeminiApiKey;
+        }
         
         cart = []; 
     }
@@ -518,21 +540,31 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(LS_KEYS.CUSTOMERS, JSON.stringify(pelangganList));
         localStorage.setItem(LS_KEYS.TRANSACTIONS, JSON.stringify(dailyTransactions));
         localStorage.setItem(LS_KEYS.SETTINGS, JSON.stringify(appSettings));
+        // Gemini API Key is saved separately by its own function
         updateLocalStorageUsageDisplay(); 
     }
+    
+    function saveGeminiApiKeyToLocalStorage(apiKey) {
+        localStorage.setItem(LS_KEYS.GEMINI_API_KEY, apiKey);
+        userProvidedGeminiApiKey = apiKey; // Update global variable
+    }
+
 
     function loadDataFromLocalStorage() { 
         document.getElementById('shopName').value = appSettings.shopName;
         document.getElementById('shopAddress').value = appSettings.shopAddress;
         document.getElementById('shopPhone').value = appSettings.shopPhone;
+        document.getElementById('geminiApiKeyInput').value = userProvidedGeminiApiKey || "";
+
 
         if (localStorage.getItem(LS_KEYS.PRODUCTS) === null && 
             localStorage.getItem(LS_KEYS.CATEGORIES) === null &&
             localStorage.getItem(LS_KEYS.CUSTOMERS) === null &&
             localStorage.getItem(LS_KEYS.TRANSACTIONS) === null &&
-            localStorage.getItem(LS_KEYS.SETTINGS) === null
+            localStorage.getItem(LS_KEYS.SETTINGS) === null &&
+            localStorage.getItem(LS_KEYS.GEMINI_API_KEY) === null
            ) {
-            saveDataToLocalStorage();
+            saveDataToLocalStorage(); // Save all default data including settings
         }
     }
 
@@ -606,6 +638,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const backupDataBtn = document.getElementById('backupDataBtn');
     const restoreFileInput = document.getElementById('restoreFile');
     const localStorageUsageEl = document.getElementById('localStorageUsage');
+    const geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
+    const saveGeminiApiKeyBtn = document.getElementById('saveGeminiApiKeyBtn');
+
+    if (saveGeminiApiKeyBtn) {
+        saveGeminiApiKeyBtn.addEventListener('click', () => {
+            const newApiKey = geminiApiKeyInput.value.trim();
+            if (newApiKey) {
+                saveGeminiApiKeyToLocalStorage(newApiKey);
+                showCustomAlert('API Key Gemini berhasil disimpan di localStorage.', 'Sukses');
+            } else {
+                localStorage.removeItem(LS_KEYS.GEMINI_API_KEY); // Remove if empty
+                userProvidedGeminiApiKey = '';
+                showCustomAlert('API Key Gemini dihapus dari localStorage.', 'Info');
+            }
+        });
+    }
 
 
     function calculateLocalStorageUsage() {
@@ -642,6 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('shopName').value = appSettings.shopName;
         document.getElementById('shopAddress').value = appSettings.shopAddress;
         document.getElementById('shopPhone').value = appSettings.shopPhone;
+        geminiApiKeyInput.value = userProvidedGeminiApiKey || "";
         updateLocalStorageUsageDisplay();
     }
     
@@ -651,7 +700,8 @@ document.addEventListener('DOMContentLoaded', () => {
             categories: productCategories,
             customers: pelangganList,
             transactions: dailyTransactions,
-            settings: appSettings
+            settings: appSettings,
+            geminiApiKey: userProvidedGeminiApiKey // Include API key in backup
         };
         const jsonString = JSON.stringify(backup, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
@@ -674,14 +724,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.onload = function(e) {
                     try {
                         const restoredData = JSON.parse(e.target.result);
+                        // Check for essential data structures
                         if (restoredData.products && restoredData.categories && restoredData.customers && restoredData.transactions && restoredData.settings) {
                             mockProducts = restoredData.products;
                             productCategories = restoredData.categories;
                             pelangganList = restoredData.customers;
                             dailyTransactions = restoredData.transactions.map(t => ({...t, timestamp: new Date(t.timestamp)})); 
                             appSettings = restoredData.settings;
+                            
+                            // Restore Gemini API Key if present in backup
+                            if (restoredData.geminiApiKey) {
+                                saveGeminiApiKeyToLocalStorage(restoredData.geminiApiKey);
+                            } else { // If not in backup, clear it from localStorage
+                                localStorage.removeItem(LS_KEYS.GEMINI_API_KEY);
+                                userProvidedGeminiApiKey = '';
+                            }
 
-                            saveDataToLocalStorage(); 
+                            saveDataToLocalStorage(); // Save all other data
                             refreshAllUI(); 
                             showCustomAlert('Data berhasil di-restore!', 'Sukses');
                         } else {
@@ -1062,19 +1121,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            // Optional: Check if customer is referenced in dailyTransactions (more complex, skipping for now to keep simple)
-            // const isCustomerInTransactions = dailyTransactions.some(t => parseInt(t.pelangganId) === customerId);
-            // if (isCustomerInTransactions) {
-            //     showCustomAlert(`Pelanggan "${customer.nama}" tidak dapat dihapus karena memiliki riwayat transaksi. Pertimbangkan untuk menonaktifkan.`, "Peringatan");
-            //     return;
-            // }
-
-
             showCustomConfirm(`Apakah Anda yakin ingin menghapus pelanggan "${customer.nama}"? Tindakan ini tidak dapat diurungkan.`, () => {
                 pelangganList = pelangganList.filter(c => c.id !== customerId);
                 saveDataToLocalStorage();
                 renderCustomerTable();
-                populateCustomerDropdown(); // Refresh dropdown in payment modal
+                populateCustomerDropdown(); 
                 updateDashboard(); 
                 updatePiutangReport();
                 showCustomAlert(`Pelanggan "${customer.nama}" berhasil dihapus.`, "Sukses");
@@ -1309,10 +1360,27 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonElement.disabled = true;
         }
 
+        let effectiveApiKey = userProvidedGeminiApiKey; // Prioritize user-provided key
+        if (!effectiveApiKey) {
+            // Fallback for environment-injected key (though it was failing for the user)
+            // This part is kept for completeness, but the primary path is user-provided key.
+            const envApiKey = ""; // This would be the placeholder for environment injection
+            effectiveApiKey = envApiKey;
+        }
+
+        if (!effectiveApiKey) {
+            showCustomAlert("API Key Gemini belum diatur. Silakan masukkan API Key Anda di menu Pengaturan.", "Error");
+            if (buttonElement) {
+                buttonElement.classList.remove('gemini-btn-loading');
+                buttonElement.disabled = false;
+            }
+            return "API Key tidak ditemukan.";
+        }
+
+
         let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
         const payload = { contents: chatHistory };
-        const apiKey = ""; // API key will be injected by the environment
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${effectiveApiKey}`;
 
         try {
             const response = await fetch(apiUrl, {
@@ -1322,7 +1390,21 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!response.ok) {
                 const errorBody = await response.text();
-                throw new Error(`API Error ${response.status}: ${errorBody}`);
+                console.error("Gemini API Error Response:", errorBody);
+                let displayError = `API Error ${response.status}`;
+                try {
+                    const parsedError = JSON.parse(errorBody);
+                    if (parsedError.error && parsedError.error.message) {
+                        displayError += `: ${parsedError.error.message}`;
+                    }
+                } catch (e) { /* Ignore parsing error, use status text */ }
+                
+                if (response.status === 403) {
+                    displayError += " Pastikan API Key Anda valid dan memiliki izin untuk model gemini-2.0-flash.";
+                } else if (response.status === 400) {
+                     displayError += " Kemungkinan ada masalah dengan format permintaan atau API Key tidak valid.";
+                }
+                throw new Error(displayError);
             }
             const result = await response.json();
 
@@ -1336,6 +1418,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error("Error calling Gemini API:", error);
+            showCustomAlert(`Gagal menghubungi AI: ${error.message}`, "Error");
             return `Gagal menghubungi AI: ${error.message}`;
         } finally {
             if (buttonElement) {
@@ -1354,7 +1437,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const prompt = `Buatkan deskripsi singkat dan menarik (maksimal 2 kalimat atau sekitar 150 karakter) untuk produk warung bernama "${productName}" dalam kategori "${productCategory}". Fokus pada manfaat atau keunikan produk jika memungkinkan.`;
         const generatedDescription = await callGeminiAPI(prompt, generateDescBtn);
-        productDescriptionTextarea.value = generatedDescription;
+        if (!generatedDescription.startsWith("Gagal") && !generatedDescription.startsWith("Tidak ada") && !generatedDescription.startsWith("API Key tidak")) {
+            productDescriptionTextarea.value = generatedDescription;
+        }
     });
     
     generatePromotionBtn.addEventListener('click', async () => {
@@ -1376,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', () => {
         generatePromotionBtn.classList.remove('gemini-btn-loading');
         generatePromotionBtn.disabled = false;
         
-        if (promotionIdeas.startsWith("Tidak ada respons") || promotionIdeas.startsWith("Gagal menghubungi AI")) {
+        if (promotionIdeas.startsWith("Tidak ada respons") || promotionIdeas.startsWith("Gagal menghubungi AI") || promotionIdeas.startsWith("API Key tidak")) {
              promotionIdeasContainer.innerHTML = `<p class="text-sm text-red-600">${promotionIdeas}</p>`;
         } else {
             const ideasHtml = promotionIdeas.split('\n').map(idea => {
@@ -1815,7 +1900,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         updatePiutangReport();
                     }
                     if (target === 'pelanggan') renderCustomerTable();
-                    if (target === 'pengaturan') updateLocalStorageUsageDisplay(); 
+                    if (target === 'pengaturan') {
+                        updateLocalStorageUsageDisplay();
+                        geminiApiKeyInput.value = userProvidedGeminiApiKey || ""; // Ensure API key input is populated
+                    }
                 }
             });
         });
