@@ -383,38 +383,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const populateCategories = () => {
         const uniqueCategories = [...new Set(mockProducts.map(p => p.category).concat(productCategories))].sort();
-        productCategories = uniqueCategories;
+        productCategories = uniqueCategories.filter(cat => cat && cat.trim() !== ""); // Ensure no empty/null categories
 
         categoryFilterEl.innerHTML = '<option value="all">Semua Kategori</option>';
-        productCategoryModalEl.innerHTML = ''; // Clear previous options
+        productCategoryModalEl.innerHTML = ''; 
 
-        productCategories.forEach(cat => {
-            const optionFilter = document.createElement('option');
-            optionFilter.value = cat;
-            optionFilter.textContent = cat;
-            categoryFilterEl.appendChild(optionFilter);
+        if (productCategories.length === 0) {
+             const defaultOption = document.createElement('option');
+             defaultOption.value = "";
+             defaultOption.textContent = "Tidak ada kategori";
+             defaultOption.disabled = true;
+             productCategoryModalEl.appendChild(defaultOption);
+        } else {
+            productCategories.forEach(cat => {
+                const optionFilter = document.createElement('option');
+                optionFilter.value = cat;
+                optionFilter.textContent = cat;
+                categoryFilterEl.appendChild(optionFilter);
 
-            const optionModal = document.createElement('option');
-            optionModal.value = cat;
-            optionModal.textContent = cat;
-            productCategoryModalEl.appendChild(optionModal);
-        });
+                const optionModal = document.createElement('option');
+                optionModal.value = cat;
+                optionModal.textContent = cat;
+                productCategoryModalEl.appendChild(optionModal);
+            });
+        }
         renderCategoryListForManagement();
     };
 
     const renderCategoryListForManagement = () => {
         categoryListEl.innerHTML = '';
         if (productCategories.length === 0) {
-            categoryListEl.innerHTML = '<li class="text-slate-500 p-2">Belum ada kategori.</li>';
+            categoryListEl.innerHTML = '<li class="text-slate-500 p-2">Belum ada kategori. Tambahkan kategori baru di atas.</li>';
             return;
         }
         productCategories.forEach(cat => {
             const li = document.createElement('li');
             li.className = 'flex justify-between items-center p-2 border-b last:border-b-0 hover:bg-slate-100';
             li.innerHTML = `
-                <span class="category-name-text">${cat}</span>
-                <div>
+                <span class="category-name-text flex-1 break-all">${cat}</span>
+                <div class="flex gap-2 ml-2">
                     <button class="edit-category-list-btn text-blue-600 hover:underline text-sm" data-category="${cat}">Edit</button>
+                    <button class="delete-category-list-btn text-red-600 hover:underline text-sm" data-category="${cat}">Hapus</button>
                 </div>
             `;
             categoryListEl.appendChild(li);
@@ -427,14 +436,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 originalCategoryNameToEditInput.value = categoryToEdit;
                 editCategoryInputName.value = categoryToEdit;
                 editCategorySection.classList.remove('hidden');
+                addCategoryForm.parentElement.classList.add('hidden'); // Hide add form
                 editCategoryInputName.focus();
             });
+        });
+        
+        document.querySelectorAll('.delete-category-list-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const categoryToDelete = e.target.dataset.category;
+                handleDeleteCategory(categoryToDelete);
+            });
+        });
+    };
+    
+    const handleDeleteCategory = (categoryName) => {
+        const isCategoryInUse = mockProducts.some(p => p.category === categoryName);
+        if (isCategoryInUse) {
+            showCustomAlert(`Kategori "${categoryName}" tidak dapat dihapus karena masih digunakan oleh beberapa produk. Ubah kategori produk tersebut terlebih dahulu.`, "Peringatan");
+            return;
+        }
+
+        showCustomConfirm(`Apakah Anda yakin ingin menghapus kategori "${categoryName}"? Tindakan ini tidak dapat diurungkan.`, () => {
+            productCategories = productCategories.filter(cat => cat !== categoryName);
+            populateCategories();
+            updateSalesReport(); // Refresh report if category is removed
+            showCustomAlert(`Kategori "${categoryName}" berhasil dihapus.`, "Sukses");
         });
     };
     
     manageCategoriesBtn.addEventListener('click', () => {
         renderCategoryListForManagement();
-        editCategorySection.classList.add('hidden'); // Hide edit form initially
+        editCategorySection.classList.add('hidden'); 
+        addCategoryForm.parentElement.classList.remove('hidden');
         newCategoryNameInput.value = '';
         categoryManagementModal.classList.remove('hidden');
     });
@@ -452,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 productCategories.push(newCategory);
                 productCategories.sort();
-                populateCategories(); // This will also call renderCategoryListForManagement
+                populateCategories(); 
                 newCategoryNameInput.value = '';
                 showCustomAlert(`Kategori "${newCategory}" berhasil ditambahkan.`, "Sukses");
             }
@@ -470,7 +503,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (newName.toLowerCase() === originalName.toLowerCase()) {
-            editCategorySection.classList.add('hidden'); // Just close if no change
+            editCategorySection.classList.add('hidden');
+            addCategoryForm.parentElement.classList.remove('hidden');
             return;
         }
 
@@ -479,31 +513,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Update category in productCategories array
         const index = productCategories.findIndex(c => c.toLowerCase() === originalName.toLowerCase());
         if (index > -1) {
             productCategories[index] = newName;
             productCategories.sort();
         }
 
-        // Update category in all products
         mockProducts.forEach(p => {
             if (p.category.toLowerCase() === originalName.toLowerCase()) {
                 p.category = newName;
             }
         });
 
-        populateCategories(); // Refresh all category dropdowns and management list
-        renderProductTable(); // Products table might show updated category
-        renderProducts();     // Product cards on kasir page if category filter was active
-        updateSalesReport();  // Report charts might depend on categories
+        populateCategories(); 
+        renderProductTable(); 
+        renderProducts();     
+        updateSalesReport();  
 
         editCategorySection.classList.add('hidden');
+        addCategoryForm.parentElement.classList.remove('hidden');
         showCustomAlert(`Kategori "${originalName}" berhasil diubah menjadi "${newName}".`, "Sukses");
     });
 
     cancelEditCategoryBtn.addEventListener('click', () => {
         editCategorySection.classList.add('hidden');
+        addCategoryForm.parentElement.classList.remove('hidden');
     });
     
     const renderProducts = (filter = '', category = 'all') => {
@@ -716,6 +750,10 @@ document.addEventListener('DOMContentLoaded', () => {
     categoryFilterEl.addEventListener('change', (e) => renderProducts(searchInput.value, e.target.value));
 
     addProductBtn.addEventListener('click', () => {
+        if (productCategories.length === 0) {
+            showCustomAlert("Silakan tambahkan minimal satu kategori produk terlebih dahulu melalui menu 'Kelola Kategori'.", "Peringatan");
+            return;
+        }
         productModalTitle.innerText = 'Tambah Produk Baru';
         productForm.reset();
         document.getElementById('productId').value = '';
@@ -945,7 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const salesByCat = {};
         const profitByCat = {};
-        const currentActiveCategories = [...new Set(mockProducts.map(p => p.category))].sort();
+        const currentActiveCategories = [...new Set(mockProducts.map(p => p.category).concat(productCategories))].filter(Boolean).sort();
 
 
         currentActiveCategories.forEach(cat => {
