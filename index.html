@@ -27,6 +27,20 @@
         .modal-content::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
         .modal-content::-webkit-scrollbar-thumb { background: #c5c5c5; border-radius: 10px; }
         .modal-content::-webkit-scrollbar-thumb:hover { background: #a5a5a5; }
+        .gemini-btn-loading {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .gemini-btn-loading::after {
+            content: '...';
+            display: inline-block;
+            animation: ellipsis 1.25s infinite;
+        }
+        @keyframes ellipsis {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -79,12 +93,14 @@
                     <div class="bg-white p-6 rounded-xl shadow">
                         <h3 class="text-sm font-medium text-slate-500">Produk Terlaris Hari Ini</h3>
                         <p id="produkTerlarisEl" class="text-2xl font-bold mt-2">-</p>
+                        <button id="generatePromotionBtn" class="mt-3 text-sm bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg hover:bg-purple-200 transition disabled:opacity-50 disabled:cursor-not-allowed">✨ Ide Promosi Produk Ini</button>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow">
                         <h3 class="text-sm font-medium text-slate-500">Total Piutang</h3>
                         <p id="totalPiutangEl" class="text-3xl font-bold text-amber-600 mt-2">Rp 0</p>
                     </div>
                 </div>
+                <div id="promotionIdeasContainer" class="mb-6"></div>
                 <div class="bg-white p-6 rounded-xl shadow mb-6">
                     <h3 class="text-lg font-semibold mb-4">Tren Penjualan & Laba 7 Hari Terakhir</h3>
                     <div class="chart-container">
@@ -351,6 +367,11 @@
                     <label for="productStock" class="block text-sm font-medium text-slate-700 mb-1">Stok Awal</label>
                     <input type="number" id="productStock" class="w-full p-3 border rounded-lg" required min="0">
                 </div>
+                <div>
+                    <label for="productDescription" class="block text-sm font-medium text-slate-700 mb-1">Deskripsi Produk</label>
+                    <textarea id="productDescription" class="w-full p-3 border rounded-lg" rows="3"></textarea>
+                    <button type="button" id="generateDescBtn" class="mt-2 text-sm bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg hover:bg-purple-200 transition">✨ Buat Deskripsi Otomatis</button>
+                </div>
                 <div class="flex gap-4 pt-4">
                     <button type="button" id="closeProductModalBtn" class="w-full bg-slate-200 text-slate-800 p-3 rounded-lg font-bold hover:bg-slate-300 transition">Batal</button>
                     <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Simpan Produk</button>
@@ -447,18 +468,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function initializeCoreData() {
         const storedProducts = localStorage.getItem(LS_KEYS.PRODUCTS);
         mockProducts = storedProducts ? JSON.parse(storedProducts) : [
-            { id: 1, name: 'Kopi Instan Sachet', category: 'Minuman', hargaBeli: 1000, price: 1500, stock: 100, image: '☕' },
-            { id: 2, name: 'Teh Celup Kotak', category: 'Minuman', hargaBeli: 4000, price: 5500, stock: 150, image: '🍵' },
-            { id: 3, name: 'Air Mineral 600ml', category: 'Minuman', hargaBeli: 2000, price: 3000, stock: 80, image: '💧' },
-            { id: 4, name: 'Keripik Singkong Pedas', category: 'Makanan Ringan', hargaBeli: 3500, price: 5000, stock: 50, image: '🥔' },
-            { id: 5, name: 'Biskuit Coklat Pack', category: 'Makanan Ringan', hargaBeli: 6000, price: 7500, stock: 60, image: '🍪' }
+            { id: 1, name: 'Kopi Instan Sachet', category: 'Minuman', hargaBeli: 1000, price: 1500, stock: 100, image: '☕', deskripsi: 'Kopi instan praktis untuk menemani harimu.' },
+            { id: 2, name: 'Teh Celup Kotak', category: 'Minuman', hargaBeli: 4000, price: 5500, stock: 150, image: '🍵', deskripsi: 'Teh celup berkualitas, aroma menenangkan.' },
+            { id: 3, name: 'Air Mineral 600ml', category: 'Minuman', hargaBeli: 2000, price: 3000, stock: 80, image: '💧', deskripsi: 'Air mineral murni dan menyegarkan.' },
+            { id: 4, name: 'Keripik Singkong Pedas', category: 'Makanan Ringan', hargaBeli: 3500, price: 5000, stock: 50, image: '🥔', deskripsi: 'Keripik singkong renyah dengan rasa pedas mantap.' },
+            { id: 5, name: 'Biskuit Coklat Pack', category: 'Makanan Ringan', hargaBeli: 6000, price: 7500, stock: 60, image: '🍪', deskripsi: 'Biskuit renyah dengan lapisan coklat tebal.' }
         ];
 
         const storedCategories = localStorage.getItem(LS_KEYS.CATEGORIES);
         const defaultCategories = ["Minuman", "Makanan Ringan", "Sembako", "Bumbu Dapur", "Perlengkapan Mandi", "Obat Ringan", "Lainnya"];
         productCategories = storedCategories ? JSON.parse(storedCategories) : defaultCategories;
         
-        // Ensure categories from products are included if LS is empty for categories, and merge with defaults
         const uniqueCategoriesFromProducts = [...new Set(mockProducts.map(p => p.category))];
         productCategories = [...new Set([...productCategories, ...uniqueCategoriesFromProducts])].filter(cat => cat && cat.trim() !== "").sort();
 
@@ -479,10 +499,10 @@ document.addEventListener('DOMContentLoaded', () => {
             shopPhone: "081234567890"
         };
         
-        cart = []; // Cart is always initialized empty for a new session
+        cart = []; 
     }
     
-    initializeCoreData(); // Initialize data right away
+    initializeCoreData(); 
 
     function saveDataToLocalStorage() {
         localStorage.setItem(LS_KEYS.PRODUCTS, JSON.stringify(mockProducts));
@@ -492,13 +512,11 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(LS_KEYS.SETTINGS, JSON.stringify(appSettings));
     }
 
-    function loadDataFromLocalStorage() { // This function is now more about applying settings after initializeCoreData
-        // Apply loaded settings to form (appSettings is already loaded by initializeCoreData)
+    function loadDataFromLocalStorage() { 
         document.getElementById('shopName').value = appSettings.shopName;
         document.getElementById('shopAddress').value = appSettings.shopAddress;
         document.getElementById('shopPhone').value = appSettings.shopPhone;
 
-        // If localStorage was completely empty before initializeCoreData ran with defaults, save those defaults now.
         if (localStorage.getItem(LS_KEYS.PRODUCTS) === null && 
             localStorage.getItem(LS_KEYS.CATEGORIES) === null &&
             localStorage.getItem(LS_KEYS.CUSTOMERS) === null &&
@@ -532,6 +550,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const productForm = document.getElementById('productForm');
     const productModalTitle = document.getElementById('productModalTitle');
     const productCategoryModalEl = document.getElementById('productCategoryModal');
+    const productDescriptionTextarea = document.getElementById('productDescription');
+    const generateDescBtn = document.getElementById('generateDescBtn');
 
     const penjualanHariIniEl = document.getElementById('penjualanHariIniEl');
     const labaHariIniEl = document.getElementById('labaHariIniEl');
@@ -540,6 +560,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const produkTerlarisEl = document.getElementById('produkTerlarisEl');
     const stokKritisListEl = document.getElementById('stokKritisList');
     const transaksiTerakhirListEl = document.getElementById('transaksiTerakhirList');
+    const generatePromotionBtn = document.getElementById('generatePromotionBtn');
+    const promotionIdeasContainer = document.getElementById('promotionIdeasContainer');
     
     const reportPeriodEl = document.getElementById('reportPeriod');
     const reportDateEl = document.getElementById('reportDate');
@@ -585,11 +607,10 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDashboard();
         updateSalesReport();
         updatePiutangReport();
-        // Apply settings to form (in case they were restored)
+        
         document.getElementById('shopName').value = appSettings.shopName;
         document.getElementById('shopAddress').value = appSettings.shopAddress;
         document.getElementById('shopPhone').value = appSettings.shopPhone;
-
     }
     
     backupDataBtn.addEventListener('click', () => {
@@ -625,11 +646,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             mockProducts = restoredData.products;
                             productCategories = restoredData.categories;
                             pelangganList = restoredData.customers;
-                            dailyTransactions = restoredData.transactions.map(t => ({...t, timestamp: new Date(t.timestamp)})); // Re-hydrate dates
+                            dailyTransactions = restoredData.transactions.map(t => ({...t, timestamp: new Date(t.timestamp)})); 
                             appSettings = restoredData.settings;
 
-                            saveDataToLocalStorage(); // Save restored data
-                            refreshAllUI(); // Refresh UI with restored data
+                            saveDataToLocalStorage(); 
+                            refreshAllUI(); 
                             showCustomAlert('Data berhasil di-restore!', 'Sukses');
                         } else {
                             showCustomAlert('Format file backup tidak valid atau data tidak lengkap.', 'Error');
@@ -639,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
                 reader.readAsText(file);
-                event.target.value = null; // Reset file input
+                event.target.value = null; 
             }, "Konfirmasi Restore Data");
         }
     });
@@ -962,6 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('productCostPrice').value = product.hargaBeli;
                 document.getElementById('productPrice').value = product.price;
                 document.getElementById('productStock').value = product.stock;
+                productDescriptionTextarea.value = product.deskripsi || '';
                 productModal.classList.remove('hidden');
             }
         },
@@ -1164,6 +1186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (productCategories.length > 0) {
             productCategoryModalEl.value = productCategories[0];
         }
+        productDescriptionTextarea.value = '';
         productModal.classList.remove('hidden');
     });
 
@@ -1177,6 +1200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const costPrice = parseFloat(document.getElementById('productCostPrice').value);
         const price = parseFloat(document.getElementById('productPrice').value);
         const stock = parseInt(document.getElementById('productStock').value);
+        const description = productDescriptionTextarea.value;
 
         if (costPrice > price) {
             showCustomAlert("Harga beli tidak boleh lebih besar dari harga jual.", "Error");
@@ -1193,6 +1217,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hargaBeli: costPrice,
             price: price,
             stock: stock,
+            deskripsi: description,
             image: mockProducts.find(p=>p.category === category)?.image || '🆕' 
         };
 
@@ -1214,6 +1239,97 @@ document.addEventListener('DOMContentLoaded', () => {
         populateCategories(); 
     });
 
+    async function callGeminiAPI(prompt, buttonElement) {
+        if (buttonElement) {
+            buttonElement.classList.add('gemini-btn-loading');
+            buttonElement.disabled = true;
+        }
+
+        let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+        const payload = { contents: chatHistory };
+        const apiKey = ""; // API key will be injected by the environment
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`API Error ${response.status}: ${errorBody}`);
+            }
+            const result = await response.json();
+
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                console.error("Unexpected Gemini API response structure:", result);
+                return "Tidak ada respons dari AI.";
+            }
+        } catch (error) {
+            console.error("Error calling Gemini API:", error);
+            return `Gagal menghubungi AI: ${error.message}`;
+        } finally {
+            if (buttonElement) {
+                buttonElement.classList.remove('gemini-btn-loading');
+                buttonElement.disabled = false;
+            }
+        }
+    }
+
+    generateDescBtn.addEventListener('click', async () => {
+        const productName = document.getElementById('productName').value;
+        const productCategory = document.getElementById('productCategoryModal').value;
+        if (!productName || !productCategory) {
+            showCustomAlert("Nama produk dan kategori harus diisi untuk membuat deskripsi.", "Peringatan");
+            return;
+        }
+        const prompt = `Buatkan deskripsi singkat dan menarik (maksimal 2 kalimat atau sekitar 150 karakter) untuk produk warung bernama "${productName}" dalam kategori "${productCategory}". Fokus pada manfaat atau keunikan produk jika memungkinkan.`;
+        const generatedDescription = await callGeminiAPI(prompt, generateDescBtn);
+        productDescriptionTextarea.value = generatedDescription;
+    });
+    
+    generatePromotionBtn.addEventListener('click', async () => {
+        const bestSellingProductText = produkTerlarisEl.innerText;
+        if (!bestSellingProductText || bestSellingProductText === '-') {
+            showCustomAlert("Belum ada data produk terlaris untuk dibuatkan ide promosi.", "Info");
+            return;
+        }
+        // Extract product name, assuming format "Nama Produk (jumlah)"
+        const productNameOnly = bestSellingProductText.split('(')[0].trim();
+
+        const prompt = `Berikan 2-3 ide promosi sederhana dan kreatif untuk produk warung bernama "${productNameOnly}" untuk meningkatkan penjualan. Sampaikan dalam format daftar poin singkat.`;
+        
+        promotionIdeasContainer.innerHTML = `<p class="text-sm text-purple-700 animate-pulse">Meminta ide promosi dari AI...</p>`;
+        generatePromotionBtn.classList.add('gemini-btn-loading');
+        generatePromotionBtn.disabled = true;
+
+        const promotionIdeas = await callGeminiAPI(prompt, null); // Pass null as buttonElement to handle loading separately
+
+        generatePromotionBtn.classList.remove('gemini-btn-loading');
+        generatePromotionBtn.disabled = false;
+        
+        if (promotionIdeas.startsWith("Tidak ada respons") || promotionIdeas.startsWith("Gagal menghubungi AI")) {
+             promotionIdeasContainer.innerHTML = `<p class="text-sm text-red-600">${promotionIdeas}</p>`;
+        } else {
+            const ideasHtml = promotionIdeas.split('\n').map(idea => {
+                if (idea.trim() === '') return '';
+                // Remove leading asterisks or numbers from Gemini's list format
+                return `<li class="text-sm text-slate-700 mb-1">${idea.replace(/^[\*\-\d\.]+\s*/, '')}</li>`;
+            }).join('');
+            promotionIdeasContainer.innerHTML = `
+                <div class="mt-2 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <h4 class="text-md font-semibold text-purple-800 mb-2">✨ Ide Promosi untuk ${productNameOnly}:</h4>
+                    <ul class="list-disc list-inside pl-1">${ideasHtml}</ul>
+                </div>`;
+        }
+    });
+
+
     const updateDashboard = () => {
         const today = new Date().toDateString();
         const todaysTransactions = dailyTransactions.filter(t => new Date(t.timestamp).toDateString() === today);
@@ -1234,7 +1350,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         const sortedSoldItems = Object.entries(soldItemsCount).sort((a, b) => b[1] - a[1]);
-        if(produkTerlarisEl) produkTerlarisEl.innerText = sortedSoldItems.length > 0 ? `${sortedSoldItems[0][0]} (${sortedSoldItems[0][1]})` : '-';
+        if(produkTerlarisEl) {
+            const bestSellerText = sortedSoldItems.length > 0 ? `${sortedSoldItems[0][0]} (${sortedSoldItems[0][1]})` : '-';
+            produkTerlarisEl.innerText = bestSellerText;
+            generatePromotionBtn.disabled = !(sortedSoldItems.length > 0 && bestSellerText !== '-');
+        }
         
         if(stokKritisListEl) {
             stokKritisListEl.innerHTML = '';
@@ -1639,8 +1759,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Initial Load
-    loadDataFromLocalStorage(); // Load data first, which now calls initializeCoreData internally or uses its result
-    refreshAllUI(); // Then refresh all UI elements based on loaded/default data
+    loadDataFromLocalStorage(); 
+    refreshAllUI(); 
 });
 </script>
 
