@@ -460,7 +460,10 @@
                 </div>
                 <div>
                     <label for="productBarcode" class="block text-sm font-medium text-slate-700 mb-1">Kode Barcode (Opsional)</label>
-                    <input type="text" id="productBarcode" class="w-full p-3 border rounded-lg">
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="productBarcode" class="w-full p-3 border rounded-lg">
+                        <button type="button" id="scanBarcodeForProductBtn" class="bg-indigo-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-indigo-600 transition">📷</button>
+                    </div>
                 </div>
                  <div>
                     <label for="productCostPrice" class="block text-sm font-medium text-slate-700 mb-1">Harga Beli (Rp)</label>
@@ -653,7 +656,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let mockProducts, productCategories, pelangganList, cart, dailyTransactions, appSettings;
     let userProvidedGeminiApiKey = ''; 
     let lastTransactionForReceipt = null; 
-    let barcodeScannerStream = null; // To hold the camera stream for barcode scanner
+    let barcodeScannerStream = null; 
+    let barcodeScanTargetInputId = null; // To determine where the scanned barcode should go
 
     const formatRupiah = (number) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
@@ -772,6 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const productCategoryModalEl = document.getElementById('productCategoryModal');
     const productDescriptionTextarea = document.getElementById('productDescription');
     const generateDescBtn = document.getElementById('generateDescBtn');
+    const scanBarcodeForProductBtn = document.getElementById('scanBarcodeForProductBtn');
 
     const penjualanHariIniEl = document.getElementById('penjualanHariIniEl');
     const labaHariIniEl = document.getElementById('labaHariIniEl');
@@ -1889,102 +1894,87 @@ document.addEventListener('DOMContentLoaded', () => {
         Quagga.stop();
         barcodeScannerModal.classList.add('hidden');
         barcodeScannerStatusEl.textContent = "Arahkan kamera ke barcode...";
+        barcodeScanTargetInputId = null; // Reset target
     }
 
-    if (scanBarcodeBtn) {
-        scanBarcodeBtn.addEventListener('click', () => {
-            barcodeScannerModal.classList.remove('hidden');
-            barcodeScannerStatusEl.textContent = "Memulai kamera...";
-            
-            navigator.mediaDevices.getUserMedia({ video: { 
-                facingMode: "environment",
-                width: { ideal: 640 },
-                height: { ideal: 480 }
-            } })
-            .then(function(stream) {
-                barcodeScannerStream = stream;
-                Quagga.init({
-                    inputStream : {
-                        name : "Live",
-                        type : "LiveStream",
-                        target: barcodeScannerViewport,
-                        constraints: {
-                            width: { ideal: 640 },
-                            height: { ideal: 480 },
-                            facingMode: "environment"
-                        },
-                        area: { // Defines rectangle of detection
-                            top: "20%",    // Shaves off top 20%
-                            right: "10%",  // Shaves off right 10%
-                            left: "10%",   // Shaves off left 10%
-                            bottom: "20%"  // Shaves off bottom 20%
-                        }
+    function startBarcodeScanner(targetInputId = null) {
+        barcodeScanTargetInputId = targetInputId; // Set where the scan result should go
+        barcodeScannerModal.classList.remove('hidden');
+        barcodeScannerStatusEl.textContent = "Memulai kamera...";
+        
+        navigator.mediaDevices.getUserMedia({ video: { 
+            facingMode: "environment",
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+        } })
+        .then(function(stream) {
+            barcodeScannerStream = stream;
+            Quagga.init({
+                inputStream : {
+                    name : "Live",
+                    type : "LiveStream",
+                    target: barcodeScannerViewport,
+                    constraints: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: "environment"
                     },
-                    decoder : {
-                        readers : ["ean_reader", "code_128_reader", "upc_reader"],
-                        multiple: false // Stop after one detection
-                    },
-                    locate: true, // show bounding box
-                    frequency: 10, // Scan 10 frames per second
-                }, function(err) {
-                    if (err) {
-                        console.error("Quagga init error:", err);
-                        barcodeScannerStatusEl.textContent = "Error memulai scanner: " + err.message;
-                        stopBarcodeScanner();
-                        return;
-                    }
-                    barcodeScannerStatusEl.textContent = "Arahkan kamera ke barcode...";
-                    Quagga.start();
-                });
-            })
-            .catch(function(err) {
-                console.error("getUserMedia error:", err);
-                barcodeScannerStatusEl.textContent = "Kamera tidak dapat diakses.";
-                showCustomAlert("Tidak dapat mengakses kamera. Pastikan Anda telah memberikan izin dan tidak ada aplikasi lain yang menggunakan kamera.", "Error Kamera");
-                barcodeScannerModal.classList.add('hidden');
+                    area: { top: "20%", right: "10%", left: "10%", bottom: "20%" }
+                },
+                decoder : {
+                    readers : ["ean_reader", "code_128_reader", "upc_reader", "ean_8_reader", "code_39_reader"],
+                    multiple: false 
+                },
+                locate: true, 
+                frequency: 10, 
+            }, function(err) {
+                if (err) {
+                    console.error("Quagga init error:", err);
+                    barcodeScannerStatusEl.textContent = "Error memulai scanner: " + err.message;
+                    stopBarcodeScanner();
+                    return;
+                }
+                barcodeScannerStatusEl.textContent = "Arahkan kamera ke barcode...";
+                Quagga.start();
             });
+        })
+        .catch(function(err) {
+            console.error("getUserMedia error:", err);
+            barcodeScannerStatusEl.textContent = "Kamera tidak dapat diakses.";
+            showCustomAlert("Tidak dapat mengakses kamera. Pastikan Anda telah memberikan izin dan tidak ada aplikasi lain yang menggunakan kamera.", "Error Kamera");
+            barcodeScannerModal.classList.add('hidden');
         });
     }
+
+    if (scanBarcodeBtn) { // Scanner button on Kasir page
+        scanBarcodeBtn.addEventListener('click', () => startBarcodeScanner(null)); // null target means add to cart
+    }
+    if (scanBarcodeForProductBtn) { // Scanner button in Product Modal
+        scanBarcodeForProductBtn.addEventListener('click', () => startBarcodeScanner('productBarcode'));
+    }
+
 
     Quagga.onDetected(function(result) {
         const code = result.codeResult.code;
         barcodeScannerStatusEl.textContent = "Barcode terdeteksi: " + code;
         
-        const product = mockProducts.find(p => p.kodeBarcode === code);
-        if (product) {
-            addToCart(product.id);
-            showCustomAlert(`Produk "${product.name}" ditambahkan ke keranjang.`, "Sukses Scan");
-        } else {
-            showCustomAlert(`Produk dengan barcode "${code}" tidak ditemukan.`, "Produk Tidak Ditemukan");
+        if (barcodeScanTargetInputId) { // If target is an input field (e.g., product barcode)
+            const targetInput = document.getElementById(barcodeScanTargetInputId);
+            if (targetInput) {
+                targetInput.value = code;
+            }
+        } else { // Default behavior: find product and add to cart
+            const product = mockProducts.find(p => p.kodeBarcode === code);
+            if (product) {
+                addToCart(product.id);
+                showCustomAlert(`Produk "${product.name}" ditambahkan ke keranjang.`, "Sukses Scan");
+            } else {
+                showCustomAlert(`Produk dengan barcode "${code}" tidak ditemukan.`, "Produk Tidak Ditemukan");
+            }
         }
         stopBarcodeScanner();
     });
     
-    // Optional: Draw detection box (can be performance intensive on low-end devices)
-    // Quagga.onProcessed(function(result) {
-    //     var drawingCtx = Quagga.canvas.ctx.overlay,
-    //         drawingCanvas = Quagga.canvas.dom.overlay;
-
-    //     if (result) {
-    //         if (result.boxes) {
-    //             drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-    //             result.boxes.filter(function (box) {
-    //                 return box !== result.box;
-    //             }).forEach(function (box) {
-    //                 Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
-    //             });
-    //         }
-
-    //         if (result.box) {
-    //             Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
-    //         }
-
-    //         if (result.codeResult && result.codeResult.code) {
-    //             Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
-    //         }
-    //     }
-    // });
-
 
     if(closeBarcodeScannerModalBtn) {
         closeBarcodeScannerModalBtn.addEventListener('click', stopBarcodeScanner);
