@@ -518,7 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(LS_KEYS.CUSTOMERS, JSON.stringify(pelangganList));
         localStorage.setItem(LS_KEYS.TRANSACTIONS, JSON.stringify(dailyTransactions));
         localStorage.setItem(LS_KEYS.SETTINGS, JSON.stringify(appSettings));
-        updateLocalStorageUsageDisplay(); // Update usage display after saving
+        updateLocalStorageUsageDisplay(); 
     }
 
     function loadDataFromLocalStorage() { 
@@ -613,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const key in LS_KEYS) {
             const item = localStorage.getItem(LS_KEYS[key]);
             if (item) {
-                totalBytes += item.length * 2; // Approximation: UTF-16, 2 bytes per character
+                totalBytes += item.length * 2; 
             }
         }
         return totalBytes;
@@ -927,6 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="p-4 text-right ${c.saldoHutang > 0 ? 'text-red-600 font-semibold' : ''}">${formatRupiah(c.saldoHutang)}</td>
                 <td class="p-4">
                     <button class="text-blue-600 hover:underline mr-2 text-sm" data-id="${c.id}" onclick="window.app.editCustomer(event)">Edit</button>
+                    <button class="text-red-600 hover:underline text-sm ml-2" data-id="${c.id}" onclick="window.app.deleteCustomer(event)">Hapus</button>
                 </td>
             `;
             customerTableBody.appendChild(row);
@@ -1047,6 +1048,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('customerAddress').value = customer.alamat;
                 customerModal.classList.remove('hidden');
             }
+        },
+        deleteCustomer: (event) => {
+            const customerId = parseInt(event.target.dataset.id);
+            const customer = pelangganList.find(c => c.id === customerId);
+            if (!customer) {
+                showCustomAlert("Pelanggan tidak ditemukan.", "Error");
+                return;
+            }
+
+            if (customer.saldoHutang > 0) {
+                showCustomAlert(`Pelanggan "${customer.nama}" tidak dapat dihapus karena masih memiliki saldo hutang sebesar ${formatRupiah(customer.saldoHutang)}. Harap lunasi hutang terlebih dahulu.`, "Peringatan");
+                return;
+            }
+            
+            // Optional: Check if customer is referenced in dailyTransactions (more complex, skipping for now to keep simple)
+            // const isCustomerInTransactions = dailyTransactions.some(t => parseInt(t.pelangganId) === customerId);
+            // if (isCustomerInTransactions) {
+            //     showCustomAlert(`Pelanggan "${customer.nama}" tidak dapat dihapus karena memiliki riwayat transaksi. Pertimbangkan untuk menonaktifkan.`, "Peringatan");
+            //     return;
+            // }
+
+
+            showCustomConfirm(`Apakah Anda yakin ingin menghapus pelanggan "${customer.nama}"? Tindakan ini tidak dapat diurungkan.`, () => {
+                pelangganList = pelangganList.filter(c => c.id !== customerId);
+                saveDataToLocalStorage();
+                renderCustomerTable();
+                populateCustomerDropdown(); // Refresh dropdown in payment modal
+                updateDashboard(); 
+                updatePiutangReport();
+                showCustomAlert(`Pelanggan "${customer.nama}" berhasil dihapus.`, "Sukses");
+            });
         }
     };
 
@@ -1783,7 +1815,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         updatePiutangReport();
                     }
                     if (target === 'pelanggan') renderCustomerTable();
-                    if (target === 'pengaturan') updateLocalStorageUsageDisplay(); // Update usage when settings page is viewed
+                    if (target === 'pengaturan') updateLocalStorageUsageDisplay(); 
                 }
             });
         });
