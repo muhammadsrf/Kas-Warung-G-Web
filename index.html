@@ -138,6 +138,9 @@
                 <a href="#pelanggan" class="nav-link flex items-center p-3 rounded-lg text-slate-700 hover:bg-blue-50" data-target="pelanggan">
                     <span class="text-xl">👥</span><span class="ml-4 hidden lg:block">Pelanggan</span>
                 </a>
+                <a href="#keuangan" class="nav-link flex items-center p-3 rounded-lg text-slate-700 hover:bg-blue-50" data-target="keuangan">
+                    <span class="text-xl">💰</span><span class="ml-4 hidden lg:block">Keuangan</span>
+                </a>
                 <a href="#laporan" class="nav-link flex items-center p-3 rounded-lg text-slate-700 hover:bg-blue-50" data-target="laporan">
                     <span class="text-xl">📈</span><span class="ml-4 hidden lg:block">Laporan</span>
                 </a>
@@ -157,7 +160,7 @@
                         <p id="penjualanHariIniEl" class="text-3xl font-bold text-blue-600 mt-2">Rp 0</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow">
-                        <h3 class="text-sm font-medium text-slate-500">Laba Hari Ini</h3>
+                        <h3 class="text-sm font-medium text-slate-500">Laba Kotor Hari Ini</h3>
                         <p id="labaHariIniEl" class="text-3xl font-bold text-green-600 mt-2">Rp 0</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow">
@@ -172,6 +175,10 @@
                     <div class="bg-white p-6 rounded-xl shadow">
                         <h3 class="text-sm font-medium text-slate-500">Total Piutang</h3>
                         <p id="totalPiutangEl" class="text-3xl font-bold text-amber-600 mt-2">Rp 0</p>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-sm font-medium text-slate-500">Pengeluaran Hari Ini</h3>
+                        <p id="pengeluaranHariIniDashboardEl" class="text-3xl font-bold text-red-500 mt-2">Rp 0</p>
                     </div>
                 </div>
                 <div id="promotionIdeasContainer" class="mb-6"></div>
@@ -277,6 +284,62 @@
                    </table>
                </div>
            </section>
+
+            <section id="keuangan" class="page-content hidden">
+                <h2 class="text-2xl font-bold mb-6">Manajemen Keuangan</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-sm font-medium text-slate-500">Total Pemasukan (Penjualan & Bayar Hutang)</h3>
+                        <p id="financeTotalRevenue" class="text-2xl font-bold text-green-600 mt-1">Rp 0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-sm font-medium text-slate-500">Total Pengeluaran</h3>
+                        <p id="financeTotalExpenses" class="text-2xl font-bold text-red-500 mt-1">Rp 0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-sm font-medium text-slate-500">Estimasi Laba Bersih</h3>
+                        <p id="financeNetProfit" class="text-2xl font-bold text-blue-600 mt-1">Rp 0</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-xl font-semibold mb-4">Catat Pengeluaran Baru</h3>
+                        <form id="addExpenseForm" class="space-y-4">
+                            <div>
+                                <label for="expenseDate" class="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
+                                <input type="date" id="expenseDate" class="w-full p-3 border rounded-lg" required>
+                            </div>
+                            <div>
+                                <label for="expenseDescription" class="block text-sm font-medium text-slate-700 mb-1">Deskripsi Pengeluaran</label>
+                                <input type="text" id="expenseDescription" class="w-full p-3 border rounded-lg" placeholder="cth: Belanja Stok Sabun" required>
+                            </div>
+                            <div>
+                                <label for="expenseAmount" class="block text-sm font-medium text-slate-700 mb-1">Jumlah (Rp)</label>
+                                <input type="number" id="expenseAmount" class="w-full p-3 border rounded-lg" required min="0">
+                            </div>
+                            <button type="submit" class="w-full bg-rose-500 text-white p-3 rounded-lg font-bold hover:bg-rose-600 transition">Tambah Pengeluaran</button>
+                        </form>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-xl font-semibold mb-4">Daftar Pengeluaran (10 Terakhir)</h3>
+                        <div class="overflow-x-auto max-h-96">
+                            <table class="w-full text-left min-w-[400px]">
+                                <thead class="bg-slate-100 sticky top-0">
+                                    <tr>
+                                        <th class="p-3 font-semibold">Tanggal</th>
+                                        <th class="p-3 font-semibold">Deskripsi</th>
+                                        <th class="p-3 font-semibold text-right">Jumlah</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenseListTableBody">
+                                    <tr><td colspan="3" class="p-4 text-center text-slate-500">Belum ada pengeluaran.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <section id="laporan" class="page-content hidden">
                 <h2 class="text-2xl font-bold mb-6">Laporan</h2>
@@ -656,7 +719,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // Core state variables declared first
-    let mockProducts, productCategories, pelangganList, cart, dailyTransactions, appSettings;
+    let mockProducts, productCategories, pelangganList, cart, dailyTransactions, appSettings, expensesList;
     let userProvidedGeminiApiKey = ''; 
     let lastTransactionForReceipt = null; 
     let barcodeScannerStream = null; 
@@ -672,7 +735,8 @@ document.addEventListener('DOMContentLoaded', () => {
         CUSTOMERS: 'kasWarung_customers',
         TRANSACTIONS: 'kasWarung_transactions',
         SETTINGS: 'kasWarung_appSettings',
-        GEMINI_API_KEY: 'kasWarung_geminiApiKey' 
+        GEMINI_API_KEY: 'kasWarung_geminiApiKey',
+        EXPENSES: 'kasWarung_expenses' 
     };
 
     // Initialization function for core data
@@ -715,6 +779,9 @@ document.addEventListener('DOMContentLoaded', () => {
             userProvidedGeminiApiKey = storedGeminiApiKey;
             document.getElementById('geminiApiKeyInput').value = userProvidedGeminiApiKey;
         }
+
+        const storedExpenses = localStorage.getItem(LS_KEYS.EXPENSES);
+        expensesList = storedExpenses ? JSON.parse(storedExpenses).map(e => ({...e, date: new Date(e.date)})) : [];
         
         cart = []; 
     }
@@ -727,6 +794,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(LS_KEYS.CUSTOMERS, JSON.stringify(pelangganList));
         localStorage.setItem(LS_KEYS.TRANSACTIONS, JSON.stringify(dailyTransactions));
         localStorage.setItem(LS_KEYS.SETTINGS, JSON.stringify(appSettings));
+        localStorage.setItem(LS_KEYS.EXPENSES, JSON.stringify(expensesList));
         updateLocalStorageUsageDisplay(); 
     }
     
@@ -748,7 +816,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.getItem(LS_KEYS.CUSTOMERS) === null &&
             localStorage.getItem(LS_KEYS.TRANSACTIONS) === null &&
             localStorage.getItem(LS_KEYS.SETTINGS) === null &&
-            localStorage.getItem(LS_KEYS.GEMINI_API_KEY) === null
+            localStorage.getItem(LS_KEYS.GEMINI_API_KEY) === null &&
+            localStorage.getItem(LS_KEYS.EXPENSES) === null
            ) {
             saveDataToLocalStorage(); 
         }
@@ -790,6 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const transaksiTerakhirListEl = document.getElementById('transaksiTerakhirList');
     const generatePromotionBtn = document.getElementById('generatePromotionBtn');
     const promotionIdeasContainer = document.getElementById('promotionIdeasContainer');
+    const pengeluaranHariIniDashboardEl = document.getElementById('pengeluaranHariIniDashboardEl');
     
     const reportPeriodEl = document.getElementById('reportPeriod');
     const reportDateEl = document.getElementById('reportDate');
@@ -852,6 +922,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const barcodeScannerStatusEl = document.getElementById('barcodeScannerStatus');
     const closeBarcodeScannerModalBtn = document.getElementById('closeBarcodeScannerModalBtn');
     const exportReportBtn = document.getElementById('exportReportBtn');
+
+    const addExpenseForm = document.getElementById('addExpenseForm');
+    const expenseListTableBodyEl = document.getElementById('expenseListTableBody');
+    const financeTotalRevenueEl = document.getElementById('financeTotalRevenue');
+    const financeTotalExpensesEl = document.getElementById('financeTotalExpenses');
+    const financeNetProfitEl = document.getElementById('financeNetProfit');
 
 
     if (addCustomTransactionBtn) {
@@ -950,6 +1026,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDashboard();
         updateSalesReport();
         updatePiutangReport();
+        renderExpenseList();
+        updateFinancialSummary();
         
         document.getElementById('shopName').value = appSettings.shopName;
         document.getElementById('shopAddress').value = appSettings.shopAddress;
@@ -965,7 +1043,8 @@ document.addEventListener('DOMContentLoaded', () => {
             customers: pelangganList,
             transactions: dailyTransactions,
             settings: appSettings,
-            geminiApiKey: userProvidedGeminiApiKey 
+            geminiApiKey: userProvidedGeminiApiKey,
+            expenses: expensesList 
         };
         const jsonString = JSON.stringify(backup, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
@@ -994,6 +1073,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             pelangganList = restoredData.customers;
                             dailyTransactions = restoredData.transactions.map(t => ({...t, timestamp: new Date(t.timestamp)})); 
                             appSettings = restoredData.settings;
+                            expensesList = restoredData.expenses ? restoredData.expenses.map(ex => ({...ex, date: new Date(ex.date)})) : [];
                             
                             if (restoredData.geminiApiKey) {
                                 saveGeminiApiKeyToLocalStorage(restoredData.geminiApiKey);
@@ -1988,15 +2068,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateDashboard = () => {
         const today = new Date().toDateString();
         const todaysTransactions = dailyTransactions.filter(t => new Date(t.timestamp).toDateString() === today);
+        const todaysExpenses = expensesList.filter(e => new Date(e.date).toDateString() === today);
 
         const totalSalesToday = todaysTransactions.reduce((sum, t) => sum + t.totalAmount, 0);
-        const totalProfitToday = todaysTransactions.reduce((sum, t) => sum + t.profit, 0);
+        const totalProfitToday = todaysTransactions.filter(t => t.tipePembayaran !== 'PEMBAYARAN_HUTANG').reduce((sum, t) => sum + t.profit, 0);
         const totalPiutang = pelangganList.reduce((sum, c) => sum + c.saldoHutang, 0);
+        const totalExpensesToday = todaysExpenses.reduce((sum, e) => sum + e.amount, 0);
         
         if(penjualanHariIniEl) penjualanHariIniEl.innerText = formatRupiah(totalSalesToday);
         if(labaHariIniEl) labaHariIniEl.innerText = formatRupiah(totalProfitToday);
         if(totalPiutangEl) totalPiutangEl.innerText = formatRupiah(totalPiutang);
         if(transaksiHariIniEl) transaksiHariIniEl.innerText = todaysTransactions.length;
+        if(pengeluaranHariIniDashboardEl) pengeluaranHariIniDashboardEl.innerText = formatRupiah(totalExpensesToday);
+
 
         const soldItemsCount = {};
         todaysTransactions.forEach(t => {
@@ -2362,7 +2446,7 @@ document.addEventListener('DOMContentLoaded', () => {
             transactionsToExport.forEach(t => {
                 let itemsString = t.deskripsi || ''; 
                 if (t.items && t.items.length > 0) {
-                    itemsString = t.items.map(item => `${item.name} (x${item.quantity})`).join('; '); // Use semicolon for items within a cell
+                    itemsString = t.items.map(item => `${item.name} (x${item.quantity})`).join('; '); 
                 }
                 const customerName = t.pelangganId ? (pelangganList.find(p => p.id === parseInt(t.pelangganId))?.nama || 'N/A') : 'Umum';
                 let tipeBayarDisplay = t.tipePembayaran;
@@ -2373,8 +2457,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const row = [
                     t.id,
                     new Date(t.timestamp).toLocaleString('id-ID'),
-                    `"${customerName.replace(/"/g, '""')}"`, // Escape quotes in customer name
-                    `"${itemsString.replace(/"/g, '""')}"`, // Escape quotes in items string
+                    `"${customerName.replace(/"/g, '""')}"`, 
+                    `"${itemsString.replace(/"/g, '""')}"`, 
                     tipeBayarDisplay,
                     t.totalAmount,
                     t.jumlahBayar,
@@ -2384,7 +2468,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 csvContent += row.join(",") + "\r\n";
             });
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' }); // Added BOM for Excel
             const link = document.createElement("a");
             if (link.download !== undefined) {
                 const url = URL.createObjectURL(blob);
@@ -2396,6 +2480,67 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
             }
+        });
+    }
+
+    function renderExpenseList() {
+        expenseListTableBodyEl.innerHTML = '';
+        const last10Expenses = expensesList.slice().sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0,10);
+
+        if (last10Expenses.length === 0) {
+            expenseListTableBodyEl.innerHTML = '<tr><td colspan="3" class="p-3 text-center text-slate-500">Belum ada pengeluaran.</td></tr>';
+            return;
+        }
+        last10Expenses.forEach(expense => {
+            const row = expenseListTableBodyEl.insertRow();
+            row.className = 'border-b hover:bg-slate-50';
+            row.insertCell().textContent = new Date(expense.date).toLocaleDateString('id-ID');
+            row.insertCell().textContent = expense.description;
+            const amountCell = row.insertCell();
+            amountCell.textContent = formatRupiah(expense.amount);
+            amountCell.className = 'text-right';
+        });
+    }
+
+    function updateFinancialSummary() {
+        const totalRevenue = dailyTransactions.reduce((sum, t) => sum + t.totalAmount, 0);
+        const totalExpenses = expensesList.reduce((sum, e) => sum + e.amount, 0);
+        const totalCostOfGoodsSold = dailyTransactions
+            .filter(t => t.tipePembayaran !== 'PEMBAYARAN_HUTANG') // Exclude debt payments from COGS
+            .reduce((sum, t) => {
+                return sum + t.items.reduce((itemSum, item) => itemSum + (item.hargaBeli * item.quantity), 0);
+            }, 0);
+        
+        const grossProfit = dailyTransactions
+            .filter(t => t.tipePembayaran !== 'PEMBAYARAN_HUTANG')
+            .reduce((sum, t) => sum + t.profit, 0);
+
+        const netProfit = grossProfit - totalExpenses;
+
+        if(financeTotalRevenueEl) financeTotalRevenueEl.textContent = formatRupiah(totalRevenue);
+        if(financeTotalExpensesEl) financeTotalExpensesEl.textContent = formatRupiah(totalExpenses);
+        if(financeNetProfitEl) financeNetProfitEl.textContent = formatRupiah(netProfit);
+    }
+
+
+    if (addExpenseForm) {
+        addExpenseForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const date = document.getElementById('expenseDate').value;
+            const description = document.getElementById('expenseDescription').value.trim();
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+
+            if (!date || !description || isNaN(amount) || amount <= 0) {
+                showCustomAlert("Tanggal, deskripsi, dan jumlah pengeluaran harus valid.", "Error");
+                return;
+            }
+            expensesList.push({ id: Date.now(), date: new Date(date), description, amount });
+            saveDataToLocalStorage();
+            renderExpenseList();
+            updateFinancialSummary();
+            updateDashboard(); // Update dashboard if it shows daily expenses
+            addExpenseForm.reset();
+            showCustomAlert("Pengeluaran berhasil dicatat.", "Sukses");
         });
     }
 
@@ -2509,6 +2654,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         updatePiutangReport();
                     }
                     if (target === 'pelanggan') renderCustomerTable();
+                    if (target === 'keuangan') {
+                        renderExpenseList();
+                        updateFinancialSummary();
+                    }
                     if (target === 'pengaturan') {
                         updateLocalStorageUsageDisplay();
                         geminiApiKeyInput.value = userProvidedGeminiApiKey || ""; 
