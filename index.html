@@ -531,6 +531,10 @@
                         <button type="button" id="scanBarcodeForProductBtn" class="bg-indigo-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-indigo-600 transition">📷</button>
                     </div>
                 </div>
+                <div>
+                    <label for="productIcon" class="block text-sm font-medium text-slate-700 mb-1">Ikon Produk (Emoji/Simbol)</label>
+                    <input type="text" id="productIcon" class="w-full p-3 border rounded-lg" maxlength="2">
+                </div>
                  <div>
                     <label for="productCostPrice" class="block text-sm font-medium text-slate-700 mb-1">Harga Beli (Rp)</label>
                     <input type="number" id="productCostPrice" class="w-full p-3 border rounded-lg" required min="0">
@@ -724,6 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastTransactionForReceipt = null; 
     let barcodeScannerStream = null; 
     let barcodeScanTargetInputId = null; 
+    let isQuaggaRunning = false; 
 
     const formatRupiah = (number) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
@@ -1428,6 +1433,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('productPrice').value = product.price;
                 document.getElementById('productStock').value = product.stock;
                 productDescriptionTextarea.value = product.deskripsi || '';
+                document.getElementById('productIcon').value = product.image || '🆕';
                 productModal.classList.remove('hidden');
             }
         },
@@ -1795,6 +1801,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (productCategories.length > 0) {
             productCategoryModalEl.value = productCategories[0];
         }
+        document.getElementById('productIcon').value = '🆕'; // Default icon
         productDescriptionTextarea.value = '';
         productModal.classList.remove('hidden');
     });
@@ -1807,6 +1814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = document.getElementById('productName').value;
         const category = document.getElementById('productCategoryModal').value;
         const barcode = document.getElementById('productBarcode').value.trim();
+        const icon = document.getElementById('productIcon').value.trim() || '🆕';
         const costPrice = parseFloat(document.getElementById('productCostPrice').value);
         const price = parseFloat(document.getElementById('productPrice').value);
         const stock = parseInt(document.getElementById('productStock').value);
@@ -1829,7 +1837,7 @@ document.addEventListener('DOMContentLoaded', () => {
             price: price,
             stock: stock,
             deskripsi: description,
-            image: mockProducts.find(p=>p.category === category)?.image || '🆕' 
+            image: icon 
         };
 
         if(id) { 
@@ -1971,13 +1979,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function stopBarcodeScanner() {
+        if (isQuaggaRunning && typeof Quagga !== 'undefined') {
+            try {
+                Quagga.stop();
+            } catch (e) {
+                console.warn("Error during Quagga.stop():", e);
+            }
+        }
+        isQuaggaRunning = false; 
+
         if (barcodeScannerStream) {
             barcodeScannerStream.getTracks().forEach(track => track.stop());
             barcodeScannerStream = null;
         }
-        Quagga.stop();
+        
         barcodeScannerModal.classList.add('hidden');
-        barcodeScannerStatusEl.textContent = "Arahkan kamera ke barcode...";
+        if(barcodeScannerStatusEl) barcodeScannerStatusEl.textContent = "Arahkan kamera ke barcode...";
         barcodeScanTargetInputId = null; 
     }
 
@@ -1985,7 +2002,9 @@ document.addEventListener('DOMContentLoaded', () => {
         barcodeScanTargetInputId = targetInputId; 
         barcodeScannerModal.classList.remove('hidden');
         barcodeScannerStatusEl.textContent = "Memulai kamera...";
-        
+        if (barcodeScannerViewport) barcodeScannerViewport.innerHTML = '';
+
+
         navigator.mediaDevices.getUserMedia({ video: { 
             facingMode: "environment",
             width: { ideal: 640 },
@@ -1997,7 +2016,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 inputStream : {
                     name : "Live",
                     type : "LiveStream",
-                    target: barcodeScannerViewport,
+                    target: barcodeScannerViewport, 
                     constraints: {
                         width: { ideal: 640 },
                         height: { ideal: 480 },
@@ -2013,20 +2032,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 frequency: 10, 
             }, function(err) {
                 if (err) {
-                    console.error("Quagga init error:", err);
+                    console.error("Quagga.init error:", err);
                     barcodeScannerStatusEl.textContent = "Error memulai scanner: " + err.message;
-                    stopBarcodeScanner();
+                    showCustomAlert("Gagal menginisialisasi pemindai barcode: " + err.message, "Error Pemindai");
+                    
+                    if (barcodeScannerStream) { 
+                        barcodeScannerStream.getTracks().forEach(track => track.stop());
+                        barcodeScannerStream = null;
+                    }
+                    barcodeScannerModal.classList.add('hidden'); 
+                    isQuaggaRunning = false; 
                     return;
                 }
                 barcodeScannerStatusEl.textContent = "Arahkan kamera ke barcode...";
                 Quagga.start();
+                isQuaggaRunning = true;
             });
         })
         .catch(function(err) {
             console.error("getUserMedia error:", err);
-            barcodeScannerStatusEl.textContent = "Kamera tidak dapat diakses.";
-            showCustomAlert("Tidak dapat mengakses kamera. Pastikan Anda telah memberikan izin dan tidak ada aplikasi lain yang menggunakan kamera.", "Error Kamera");
-            barcodeScannerModal.classList.add('hidden');
+            barcodeScannerStatusEl.textContent = "Kamera tidak dapat diakses: " + err.name; 
+            if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                 showCustomAlert("Tidak ada kamera yang ditemukan atau kamera tidak mendukung. Pastikan kamera belakang (environment) tersedia.", "Error Kamera");
+            } else if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                 showCustomAlert("Akses kamera tidak diizinkan. Harap berikan izin kamera di pengaturan browser Anda.", "Error Izin Kamera");
+            } else {
+                 showCustomAlert("Tidak dapat mengakses kamera: " + err.name, "Error Kamera");
+            }
+            barcodeScannerModal.classList.add('hidden'); 
         });
     }
 
@@ -2468,7 +2501,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 csvContent += row.join(",") + "\r\n";
             });
 
-            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' }); // Added BOM for Excel
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' }); 
             const link = document.createElement("a");
             if (link.download !== undefined) {
                 const url = URL.createObjectURL(blob);
@@ -2503,19 +2536,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateFinancialSummary() {
-        const totalRevenue = dailyTransactions.reduce((sum, t) => sum + t.totalAmount, 0);
+        const totalRevenue = dailyTransactions.reduce((sum, t) => sum + t.jumlahBayar, 0); 
         const totalExpenses = expensesList.reduce((sum, e) => sum + e.amount, 0);
-        const totalCostOfGoodsSold = dailyTransactions
-            .filter(t => t.tipePembayaran !== 'PEMBAYARAN_HUTANG') // Exclude debt payments from COGS
-            .reduce((sum, t) => {
-                return sum + t.items.reduce((itemSum, item) => itemSum + (item.hargaBeli * item.quantity), 0);
-            }, 0);
         
-        const grossProfit = dailyTransactions
-            .filter(t => t.tipePembayaran !== 'PEMBAYARAN_HUTANG')
+        const totalGrossProfitFromSales = dailyTransactions
+            .filter(t => t.tipePembayaran !== 'PEMBAYARAN_HUTANG') 
             .reduce((sum, t) => sum + t.profit, 0);
 
-        const netProfit = grossProfit - totalExpenses;
+        const netProfit = totalGrossProfitFromSales - totalExpenses;
 
         if(financeTotalRevenueEl) financeTotalRevenueEl.textContent = formatRupiah(totalRevenue);
         if(financeTotalExpensesEl) financeTotalExpensesEl.textContent = formatRupiah(totalExpenses);
@@ -2538,7 +2566,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveDataToLocalStorage();
             renderExpenseList();
             updateFinancialSummary();
-            updateDashboard(); // Update dashboard if it shows daily expenses
+            updateDashboard(); 
             addExpenseForm.reset();
             showCustomAlert("Pengeluaran berhasil dicatat.", "Sukses");
         });
