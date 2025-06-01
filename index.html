@@ -497,6 +497,26 @@
         </div>
     </div>
 
+    <div id="debtPaymentModal" class="modal-backdrop hidden">
+        <div class="bg-white w-full max-w-md p-8 rounded-xl shadow-lg m-4 modal-content">
+            <h2 class="text-2xl font-bold text-center mb-2">Pembayaran Hutang</h2>
+            <p class="text-center text-slate-600 mb-6">Pelanggan: <span id="debtPaymentCustomerName" class="font-semibold"></span></p>
+            
+            <div class="mb-4">
+                <p class="text-lg text-slate-600">Total Hutang Saat Ini</p>
+                <p id="currentDebtAmount" class="text-3xl font-bold text-red-600">Rp 0</p>
+            </div>
+            <div class="mb-4">
+                <label for="debtPaymentAmountInput" class="block text-sm font-medium text-slate-700 mb-1">Jumlah Pembayaran (Rp)</label>
+                <input type="number" id="debtPaymentAmountInput" placeholder="Masukkan jumlah pembayaran" class="w-full p-4 border-2 rounded-lg text-xl focus:ring-2 focus:ring-green-500 outline-none">
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button id="closeDebtPaymentModalBtn" class="w-full bg-slate-200 text-slate-800 p-3 rounded-lg font-bold hover:bg-slate-300 transition">Batal</button>
+                <button id="processDebtPaymentBtn" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold hover:bg-green-700 transition">Proses Pembayaran</button>
+            </div>
+        </div>
+    </div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -674,6 +694,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeCustomTransactionModalBtn = document.getElementById('closeCustomTransactionModalBtn');
     const customTransactionForm = document.getElementById('customTransactionForm');
 
+    const debtPaymentModal = document.getElementById('debtPaymentModal');
+    const debtPaymentCustomerNameEl = document.getElementById('debtPaymentCustomerName');
+    const currentDebtAmountEl = document.getElementById('currentDebtAmount');
+    const debtPaymentAmountInput = document.getElementById('debtPaymentAmountInput');
+    const closeDebtPaymentModalBtn = document.getElementById('closeDebtPaymentModalBtn');
+    const processDebtPaymentBtn = document.getElementById('processDebtPaymentBtn');
+    let currentPayingCustomerId = null;
+
 
     if (addCustomTransactionBtn) {
         addCustomTransactionBtn.addEventListener('click', () => {
@@ -713,8 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 category: 'Kustom' // Assign a default category or leave as needed
             };
             
-            // Add to cart logic (similar to addToCart but for custom items)
-            const existingCartItem = cart.find(item => item.id === customItem.id); // Should not happen with unique ID
+            const existingCartItem = cart.find(item => item.id === customItem.id); 
             if (existingCartItem) {
                 existingCartItem.quantity += customItem.quantity;
             } else {
@@ -1063,15 +1090,18 @@ document.addEventListener('DOMContentLoaded', () => {
         pelangganList.forEach(c => {
             const row = document.createElement('tr');
             row.className = 'border-b hover:bg-slate-50 transition-colors';
+            let actionButtons = `<button class="text-blue-600 hover:underline mr-2 text-sm" data-id="${c.id}" onclick="window.app.editCustomer(event)">Edit</button>
+                                 <button class="text-red-600 hover:underline text-sm ml-2" data-id="${c.id}" onclick="window.app.deleteCustomer(event)">Hapus</button>`;
+            if (c.saldoHutang > 0) {
+                actionButtons += `<button class="text-green-600 hover:underline text-sm ml-2" data-id="${c.id}" onclick="window.app.openDebtPaymentModal(event)">Bayar Hutang</button>`;
+            }
+
             row.innerHTML = `
                 <td class="p-4">${c.nama}</td>
                 <td class="p-4">${c.telepon || '-'}</td>
                 <td class="p-4">${c.alamat || '-'}</td>
                 <td class="p-4 text-right ${c.saldoHutang > 0 ? 'text-red-600 font-semibold' : ''}">${formatRupiah(c.saldoHutang)}</td>
-                <td class="p-4">
-                    <button class="text-blue-600 hover:underline mr-2 text-sm" data-id="${c.id}" onclick="window.app.editCustomer(event)">Edit</button>
-                    <button class="text-red-600 hover:underline text-sm ml-2" data-id="${c.id}" onclick="window.app.deleteCustomer(event)">Hapus</button>
-                </td>
+                <td class="p-4">${actionButtons}</td>
             `;
             customerTableBody.appendChild(row);
         });
@@ -1214,8 +1244,75 @@ document.addEventListener('DOMContentLoaded', () => {
                 updatePiutangReport();
                 showCustomAlert(`Pelanggan "${customer.nama}" berhasil dihapus.`, "Sukses");
             });
+        },
+        openDebtPaymentModal: (event) => {
+            const customerId = parseInt(event.target.dataset.id);
+            const customer = pelangganList.find(c => c.id === customerId);
+            if (customer && customer.saldoHutang > 0) {
+                currentPayingCustomerId = customerId;
+                debtPaymentCustomerNameEl.textContent = customer.nama;
+                currentDebtAmountEl.textContent = formatRupiah(customer.saldoHutang);
+                debtPaymentAmountInput.value = '';
+                debtPaymentAmountInput.max = customer.saldoHutang; // Set max payment
+                debtPaymentModal.classList.remove('hidden');
+                debtPaymentAmountInput.focus();
+            } else {
+                showCustomAlert("Pelanggan tidak memiliki hutang atau tidak ditemukan.", "Info");
+            }
         }
     };
+
+    if (closeDebtPaymentModalBtn) {
+        closeDebtPaymentModalBtn.addEventListener('click', () => {
+            debtPaymentModal.classList.add('hidden');
+            currentPayingCustomerId = null;
+        });
+    }
+
+    if (processDebtPaymentBtn) {
+        processDebtPaymentBtn.addEventListener('click', () => {
+            const paymentAmount = parseFloat(debtPaymentAmountInput.value);
+            const customer = pelangganList.find(c => c.id === currentPayingCustomerId);
+
+            if (!customer) {
+                showCustomAlert("Pelanggan tidak ditemukan.", "Error");
+                return;
+            }
+            if (isNaN(paymentAmount) || paymentAmount <= 0) {
+                showCustomAlert("Jumlah pembayaran tidak valid.", "Error");
+                return;
+            }
+            if (paymentAmount > customer.saldoHutang) {
+                showCustomAlert("Jumlah pembayaran melebihi total hutang.", "Error");
+                return;
+            }
+
+            customer.saldoHutang -= paymentAmount;
+            
+            dailyTransactions.push({
+                id: `DEBT-PMT/${new Date().toISOString().slice(0,10).replace(/-/g,'')}/${Date.now().toString().slice(-5)}`,
+                items: [], // No items for debt payment
+                totalAmount: paymentAmount, // This is the cash received
+                profit: 0, // No direct profit from debt payment itself
+                timestamp: new Date(),
+                pelangganId: customer.id,
+                tipePembayaran: 'PEMBAYARAN_HUTANG',
+                jumlahBayar: paymentAmount,
+                sisaBayar: 0, // Debt payment is considered fully applied to the debt amount paid
+                deskripsi: `Pembayaran hutang oleh ${customer.nama}`
+            });
+            
+            saveDataToLocalStorage();
+            renderCustomerTable();
+            updateDashboard();
+            updatePiutangReport();
+            updateSalesReport(); // To reflect the cash inflow in daily sales if needed, or adjust reporting logic
+            debtPaymentModal.classList.add('hidden');
+            showCustomAlert(`Pembayaran hutang sebesar ${formatRupiah(paymentAmount)} untuk ${customer.nama} berhasil diproses.`, "Sukses");
+            currentPayingCustomerId = null;
+        });
+    }
+
 
     const addToCart = (productId) => {
         const product = mockProducts.find(p => p.id === productId);
@@ -1251,9 +1348,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-xs text-slate-500">${formatRupiah(item.price)} x ${item.quantity}</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${item.id}, -1)">-</button>
+                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${typeof item.id === 'string' && item.id.startsWith('custom-') ? `'${item.id}'` : item.id}, -1)">-</button>
                         <span class="w-5 text-center">${item.quantity}</span>
-                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${item.id}, 1)">+</button>
+                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${typeof item.id === 'string' && item.id.startsWith('custom-') ? `'${item.id}'` : item.id}, 1)">+</button>
                     </div>
                 `;
                 cartItemsEl.appendChild(cartItemEl);
@@ -1331,9 +1428,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let currentTransactionProfit = 0;
         cart.forEach(cartItem => {
-            if (cartItem.isCustom) { // For custom items
+            if (cartItem.isCustom) { 
                  currentTransactionProfit += (cartItem.price - cartItem.hargaBeli) * cartItem.quantity;
-            } else { // For regular products
+            } else { 
                 const product = mockProducts.find(p => p.id === cartItem.id);
                 if(product) {
                     product.stock -= cartItem.quantity;
@@ -1578,9 +1675,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const soldItemsCount = {};
         todaysTransactions.forEach(t => {
-            t.items.forEach(item => {
-                soldItemsCount[item.name] = (soldItemsCount[item.name] || 0) + item.quantity;
-            });
+            if (t.tipePembayaran !== 'PEMBAYARAN_HUTANG') { // Exclude debt payments from best-selling
+                t.items.forEach(item => {
+                    soldItemsCount[item.name] = (soldItemsCount[item.name] || 0) + item.quantity;
+                });
+            }
         });
         const sortedSoldItems = Object.entries(soldItemsCount).sort((a, b) => b[1] - a[1]);
         if(produkTerlarisEl) {
@@ -1611,8 +1710,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 last5Transactions.forEach(t => {
                     const li = document.createElement('li');
                     li.className = 'flex justify-between items-center text-sm';
-                    const customerName = t.pelangganId ? pelangganList.find(p => p.id === parseInt(t.pelangganId))?.nama : 'Umum';
-                    li.innerHTML = `<span>${t.id} (${customerName})</span><span class="font-semibold ${t.tipePembayaran === 'cicil' ? 'text-amber-600' : 'text-emerald-600'}">${formatRupiah(t.totalAmount)}</span>`;
+                    let customerName = 'Umum';
+                    if (t.pelangganId) {
+                        const cust = pelangganList.find(p => p.id === parseInt(t.pelangganId));
+                        if (cust) customerName = cust.nama;
+                    }
+                    let transactionDesc = t.id;
+                    if (t.tipePembayaran === 'PEMBAYARAN_HUTANG') {
+                        transactionDesc = `Pembayaran Hutang (${customerName})`;
+                    } else {
+                        transactionDesc = `${t.id} (${customerName})`;
+                    }
+
+                    li.innerHTML = `<span>${transactionDesc}</span><span class="font-semibold ${t.tipePembayaran === 'cicil' ? 'text-amber-600' : (t.tipePembayaran === 'PEMBAYARAN_HUTANG' ? 'text-sky-600' : 'text-emerald-600')}">${formatRupiah(t.totalAmount)}</span>`;
                     transaksiTerakhirListEl.appendChild(li);
                 });
             } else {
@@ -1634,12 +1744,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const dateString = d.toDateString();
             const salesOnDate = dailyTransactions
-                .filter(t => new Date(t.timestamp).toDateString() === dateString)
+                .filter(t => new Date(t.timestamp).toDateString() === dateString && t.tipePembayaran !== 'PEMBAYARAN_HUTANG') // Exclude debt payments from sales trend
                 .reduce((sum, t) => sum + t.totalAmount, 0);
             salesData.push(salesOnDate);
 
             const profitOnDate = dailyTransactions
-                .filter(t => new Date(t.timestamp).toDateString() === dateString)
+                .filter(t => new Date(t.timestamp).toDateString() === dateString && t.tipePembayaran !== 'PEMBAYARAN_HUTANG') // Exclude debt payments from profit trend
                 .reduce((sum, t) => sum + t.profit, 0);
             profitData.push(profitOnDate);
         }
@@ -1757,12 +1867,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         filteredTransactions.forEach(t => {
-            t.items.forEach(item => {
-                if (currentActiveCategories.includes(item.category)) {
-                    salesByCat[item.category] += item.price * item.quantity;
-                    profitByCat[item.category] += (item.price - item.hargaBeli) * item.quantity;
-                }
-            });
+            if (t.tipePembayaran !== 'PEMBAYARAN_HUTANG') { // Exclude debt payments from category reports
+                t.items.forEach(item => {
+                    if (currentActiveCategories.includes(item.category)) {
+                        salesByCat[item.category] += item.price * item.quantity;
+                        profitByCat[item.category] += (item.price - item.hargaBeli) * item.quantity;
+                    }
+                });
+            }
         });
         
         const chartLabels = currentActiveCategories.length > 0 ? currentActiveCategories : ["Tidak Ada Data"];
@@ -1825,7 +1937,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <th class="p-3 font-semibold">ID Transaksi</th>
                     <th class="p-3 font-semibold">Waktu</th>
                     <th class="p-3 font-semibold">Pelanggan</th>
-                    <th class="p-3 font-semibold">Item</th>
+                    <th class="p-3 font-semibold">Item/Deskripsi</th>
                     <th class="p-3 font-semibold">Tipe Bayar</th>
                     <th class="p-3 font-semibold text-right">Total</th>
                     <th class="p-3 font-semibold text-right">Dibayar</th>
@@ -1837,16 +1949,25 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         const tbody = table.querySelector('tbody');
         transactions.forEach(t => {
-            const itemsString = t.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
+            let itemsString = t.deskripsi || ''; // Use description for debt payments
+            if (t.items && t.items.length > 0) {
+                itemsString = t.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
+            }
             const customerName = t.pelangganId ? (pelangganList.find(p => p.id === parseInt(t.pelangganId))?.nama || 'N/A') : 'Umum';
             const row = document.createElement('tr');
             row.className = 'border-b hover:bg-slate-50';
+            let tipeBayarDisplay = t.tipePembayaran;
+            if (t.tipePembayaran === 'lunas') tipeBayarDisplay = 'Lunas';
+            else if (t.tipePembayaran === 'cicil') tipeBayarDisplay = 'Cicil';
+            else if (t.tipePembayaran === 'PEMBAYARAN_HUTANG') tipeBayarDisplay = 'Bayar Hutang';
+
+
             row.innerHTML = `
                 <td class="p-3">${t.id}</td>
                 <td class="p-3">${new Date(t.timestamp).toLocaleString('id-ID')}</td>
                 <td class="p-3">${customerName}</td>
                 <td class="p-3 text-sm">${itemsString}</td>
-                <td class="p-3">${t.tipePembayaran === 'cicil' ? 'Cicil' : 'Lunas'}</td>
+                <td class="p-3">${tipeBayarDisplay}</td>
                 <td class="p-3 text-right">${formatRupiah(t.totalAmount)}</td>
                 <td class="p-3 text-right">${formatRupiah(t.jumlahBayar)}</td>
                 <td class="p-3 text-right ${t.sisaBayar > 0 ? 'text-red-600' : ''}">${formatRupiah(t.sisaBayar)}</td>
@@ -1988,7 +2109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (target === 'pelanggan') renderCustomerTable();
                     if (target === 'pengaturan') {
                         updateLocalStorageUsageDisplay();
-                        geminiApiKeyInput.value = userProvidedGeminiApiKey || ""; // Ensure API key input is populated
+                        geminiApiKeyInput.value = userProvidedGeminiApiKey || ""; 
                     }
                 }
             });
