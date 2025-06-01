@@ -128,9 +128,10 @@
                     <div class="lg:col-span-2 bg-white rounded-xl shadow p-6 h-[calc(100vh-10rem)] sm:h-[85vh] flex flex-col">
                         <div class="flex flex-col sm:flex-row gap-4 mb-4">
                             <input id="searchInput" type="text" placeholder="Cari produk..." class="w-full sm:flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                            <select id="categoryFilter" class="w-full sm:w-auto p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <select id="categoryFilter" class="w-full sm:w-auto p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none mr-2">
                                 <option value="all">Semua Kategori</option>
                             </select>
+                            <button id="addCustomTransactionBtn" class="bg-sky-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-sky-600 transition whitespace-nowrap">➕ Transaksi Kustom</button>
                         </div>
                         <div id="productList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto flex-1 p-2">
                         </div>
@@ -468,6 +469,34 @@
         </div>
     </div>
 
+    <div id="customTransactionModal" class="modal-backdrop hidden">
+        <div class="bg-white w-full max-w-lg p-8 rounded-xl shadow-lg m-4 modal-content">
+            <h2 class="text-2xl font-bold mb-6">Tambah Transaksi Kustom</h2>
+            <form id="customTransactionForm" class="space-y-4">
+                <div>
+                    <label for="customItemName" class="block text-sm font-medium text-slate-700 mb-1">Nama Barang/Jasa</label>
+                    <input type="text" id="customItemName" class="w-full p-3 border rounded-lg" required placeholder="cth: Pulsa Telkomsel 10rb">
+                </div>
+                <div>
+                    <label for="customItemPrice" class="block text-sm font-medium text-slate-700 mb-1">Harga Jual (Rp)</label>
+                    <input type="number" id="customItemPrice" class="w-full p-3 border rounded-lg" required min="0">
+                </div>
+                <div>
+                    <label for="customItemCost" class="block text-sm font-medium text-slate-700 mb-1">Harga Beli/Modal (Rp) (Opsional)</label>
+                    <input type="number" id="customItemCost" class="w-full p-3 border rounded-lg" min="0" placeholder="Kosongkan jika tidak ada">
+                </div>
+                <div>
+                    <label for="customItemQuantity" class="block text-sm font-medium text-slate-700 mb-1">Kuantitas</label>
+                    <input type="number" id="customItemQuantity" value="1" class="w-full p-3 border rounded-lg" required min="1">
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" id="closeCustomTransactionModalBtn" class="w-full bg-slate-200 text-slate-800 p-3 rounded-lg font-bold hover:bg-slate-300 transition">Batal</button>
+                    <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-lg font-bold hover:bg-sky-700 transition">Tambahkan ke Keranjang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -485,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
         CUSTOMERS: 'kasWarung_customers',
         TRANSACTIONS: 'kasWarung_transactions',
         SETTINGS: 'kasWarung_appSettings',
-        GEMINI_API_KEY: 'kasWarung_geminiApiKey' // New key for Gemini API Key
+        GEMINI_API_KEY: 'kasWarung_geminiApiKey' 
     };
 
     // Initialization function for core data
@@ -540,13 +569,12 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(LS_KEYS.CUSTOMERS, JSON.stringify(pelangganList));
         localStorage.setItem(LS_KEYS.TRANSACTIONS, JSON.stringify(dailyTransactions));
         localStorage.setItem(LS_KEYS.SETTINGS, JSON.stringify(appSettings));
-        // Gemini API Key is saved separately by its own function
         updateLocalStorageUsageDisplay(); 
     }
     
     function saveGeminiApiKeyToLocalStorage(apiKey) {
         localStorage.setItem(LS_KEYS.GEMINI_API_KEY, apiKey);
-        userProvidedGeminiApiKey = apiKey; // Update global variable
+        userProvidedGeminiApiKey = apiKey; 
     }
 
 
@@ -564,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.getItem(LS_KEYS.SETTINGS) === null &&
             localStorage.getItem(LS_KEYS.GEMINI_API_KEY) === null
            ) {
-            saveDataToLocalStorage(); // Save all default data including settings
+            saveDataToLocalStorage(); 
         }
     }
 
@@ -641,6 +669,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
     const saveGeminiApiKeyBtn = document.getElementById('saveGeminiApiKeyBtn');
 
+    const addCustomTransactionBtn = document.getElementById('addCustomTransactionBtn');
+    const customTransactionModal = document.getElementById('customTransactionModal');
+    const closeCustomTransactionModalBtn = document.getElementById('closeCustomTransactionModalBtn');
+    const customTransactionForm = document.getElementById('customTransactionForm');
+
+
+    if (addCustomTransactionBtn) {
+        addCustomTransactionBtn.addEventListener('click', () => {
+            customTransactionForm.reset();
+            customTransactionModal.classList.remove('hidden');
+        });
+    }
+    if (closeCustomTransactionModalBtn) {
+        closeCustomTransactionModalBtn.addEventListener('click', () => {
+            customTransactionModal.classList.add('hidden');
+        });
+    }
+    if (customTransactionForm) {
+        customTransactionForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const itemName = document.getElementById('customItemName').value.trim();
+            const itemPrice = parseFloat(document.getElementById('customItemPrice').value);
+            const itemCost = parseFloat(document.getElementById('customItemCost').value) || 0; // Default to 0 if empty
+            const itemQuantity = parseInt(document.getElementById('customItemQuantity').value) || 1;
+
+            if (!itemName || isNaN(itemPrice) || itemPrice <= 0 || isNaN(itemQuantity) || itemQuantity <=0) {
+                showCustomAlert("Nama barang, harga jual, dan kuantitas harus valid.", "Error");
+                return;
+            }
+            if (itemCost > itemPrice) {
+                 showCustomAlert("Harga beli/modal tidak boleh lebih besar dari harga jual.", "Error");
+                return;
+            }
+
+            const customItem = {
+                id: `custom-${Date.now()}`, // Unique ID for custom items
+                name: itemName,
+                price: itemPrice,
+                hargaBeli: itemCost,
+                quantity: itemQuantity,
+                isCustom: true, // Flag to identify custom items
+                category: 'Kustom' // Assign a default category or leave as needed
+            };
+            
+            // Add to cart logic (similar to addToCart but for custom items)
+            const existingCartItem = cart.find(item => item.id === customItem.id); // Should not happen with unique ID
+            if (existingCartItem) {
+                existingCartItem.quantity += customItem.quantity;
+            } else {
+                cart.push(customItem);
+            }
+            
+            renderCart();
+            customTransactionModal.classList.add('hidden');
+        });
+    }
+
+
     if (saveGeminiApiKeyBtn) {
         saveGeminiApiKeyBtn.addEventListener('click', () => {
             const newApiKey = geminiApiKeyInput.value.trim();
@@ -648,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveGeminiApiKeyToLocalStorage(newApiKey);
                 showCustomAlert('API Key Gemini berhasil disimpan di localStorage.', 'Sukses');
             } else {
-                localStorage.removeItem(LS_KEYS.GEMINI_API_KEY); // Remove if empty
+                localStorage.removeItem(LS_KEYS.GEMINI_API_KEY); 
                 userProvidedGeminiApiKey = '';
                 showCustomAlert('API Key Gemini dihapus dari localStorage.', 'Info');
             }
@@ -701,7 +787,7 @@ document.addEventListener('DOMContentLoaded', () => {
             customers: pelangganList,
             transactions: dailyTransactions,
             settings: appSettings,
-            geminiApiKey: userProvidedGeminiApiKey // Include API key in backup
+            geminiApiKey: userProvidedGeminiApiKey 
         };
         const jsonString = JSON.stringify(backup, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
@@ -724,7 +810,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.onload = function(e) {
                     try {
                         const restoredData = JSON.parse(e.target.result);
-                        // Check for essential data structures
                         if (restoredData.products && restoredData.categories && restoredData.customers && restoredData.transactions && restoredData.settings) {
                             mockProducts = restoredData.products;
                             productCategories = restoredData.categories;
@@ -732,15 +817,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             dailyTransactions = restoredData.transactions.map(t => ({...t, timestamp: new Date(t.timestamp)})); 
                             appSettings = restoredData.settings;
                             
-                            // Restore Gemini API Key if present in backup
                             if (restoredData.geminiApiKey) {
                                 saveGeminiApiKeyToLocalStorage(restoredData.geminiApiKey);
-                            } else { // If not in backup, clear it from localStorage
+                            } else { 
                                 localStorage.removeItem(LS_KEYS.GEMINI_API_KEY);
                                 userProvidedGeminiApiKey = '';
                             }
 
-                            saveDataToLocalStorage(); // Save all other data
+                            saveDataToLocalStorage(); 
                             refreshAllUI(); 
                             showCustomAlert('Data berhasil di-restore!', 'Sukses');
                         } else {
@@ -1163,7 +1247,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cartItemEl.className = 'flex items-center justify-between py-2 border-b border-slate-100 last:border-b-0';
                 cartItemEl.innerHTML = `
                     <div class="flex-1 mr-2">
-                        <p class="font-semibold text-sm">${item.name}</p>
+                        <p class="font-semibold text-sm">${item.name} ${item.isCustom ? '<span class="text-xs text-sky-600">(Kustom)</span>' : ''}</p>
                         <p class="text-xs text-slate-500">${formatRupiah(item.price)} x ${item.quantity}</p>
                     </div>
                     <div class="flex items-center gap-2">
@@ -1247,10 +1331,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let currentTransactionProfit = 0;
         cart.forEach(cartItem => {
-            const product = mockProducts.find(p => p.id === cartItem.id);
-            if(product) {
-                product.stock -= cartItem.quantity;
-                currentTransactionProfit += (product.price - product.hargaBeli) * cartItem.quantity;
+            if (cartItem.isCustom) { // For custom items
+                 currentTransactionProfit += (cartItem.price - cartItem.hargaBeli) * cartItem.quantity;
+            } else { // For regular products
+                const product = mockProducts.find(p => p.id === cartItem.id);
+                if(product) {
+                    product.stock -= cartItem.quantity;
+                    currentTransactionProfit += (product.price - product.hargaBeli) * cartItem.quantity;
+                }
             }
         });
         
@@ -1360,11 +1448,9 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonElement.disabled = true;
         }
 
-        let effectiveApiKey = userProvidedGeminiApiKey; // Prioritize user-provided key
+        let effectiveApiKey = userProvidedGeminiApiKey; 
         if (!effectiveApiKey) {
-            // Fallback for environment-injected key (though it was failing for the user)
-            // This part is kept for completeness, but the primary path is user-provided key.
-            const envApiKey = ""; // This would be the placeholder for environment injection
+            const envApiKey = ""; 
             effectiveApiKey = envApiKey;
         }
 
