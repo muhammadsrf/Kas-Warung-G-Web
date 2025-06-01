@@ -10,6 +10,9 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 40vh; }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; max-height: 50vh; }
+        }
         .modal-backdrop {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
@@ -52,19 +55,19 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                     <div class="bg-white p-6 rounded-xl shadow">
                         <h3 class="text-sm font-medium text-slate-500">Penjualan Hari Ini</h3>
-                        <p class="text-3xl font-bold text-blue-600 mt-2">Rp 1.250.000</p>
+                        <p id="penjualanHariIniEl" class="text-3xl font-bold text-blue-600 mt-2">Rp 0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-sm font-medium text-slate-500">Laba Hari Ini</h3>
+                        <p id="labaHariIniEl" class="text-3xl font-bold text-green-600 mt-2">Rp 0</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow">
                         <h3 class="text-sm font-medium text-slate-500">Transaksi Hari Ini</h3>
-                        <p class="text-3xl font-bold text-emerald-600 mt-2">82</p>
+                        <p id="transaksiHariIniEl" class="text-3xl font-bold text-emerald-600 mt-2">0</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow">
-                        <h3 class="text-sm font-medium text-slate-500">Produk Terlaris</h3>
-                        <p class="text-3xl font-bold mt-2">Kopi Instan</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow">
-                        <h3 class="text-sm font-medium text-slate-500">Stok Kritis</h3>
-                        <p class="text-3xl font-bold text-amber-600 mt-2">5 Produk</p>
+                        <h3 class="text-sm font-medium text-slate-500">Produk Terlaris Hari Ini</h3>
+                        <p id="produkTerlarisEl" class="text-2xl font-bold mt-2">-</p>
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow mb-6">
@@ -76,20 +79,14 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white p-6 rounded-xl shadow">
                          <h3 class="text-lg font-semibold mb-4">Stok Segera Habis</h3>
-                         <ul class="space-y-3">
-                             <li class="flex justify-between items-center"><span>Gula Pasir 1kg</span><span class="font-bold text-red-500">3 pcs</span></li>
-                             <li class="flex justify-between items-center"><span>Minyak Goreng 2L</span><span class="font-bold text-red-500">2 pcs</span></li>
-                             <li class="flex justify-between items-center"><span>Telur Ayam</span><span class="font-bold text-amber-500">12 pcs</span></li>
-                             <li class="flex justify-between items-center"><span>Mie Instan Original</span><span class="font-bold text-amber-500">15 pcs</span></li>
+                         <ul id="stokKritisList" class="space-y-3">
+                             <li class="text-slate-400">Tidak ada stok kritis.</li>
                          </ul>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow">
                          <h3 class="text-lg font-semibold mb-4">Transaksi Terakhir</h3>
-                         <ul class="space-y-3">
-                             <li class="flex justify-between items-center"><span>INV/20250601/082</span><span class="font-semibold text-emerald-600">Rp 25.000</span></li>
-                             <li class="flex justify-between items-center"><span>INV/20250601/081</span><span class="font-semibold text-emerald-600">Rp 12.500</span></li>
-                             <li class="flex justify-between items-center"><span>INV/20250601/080</span><span class="font-semibold text-emerald-600">Rp 78.000</span></li>
-                             <li class="flex justify-between items-center"><span>INV/20250601/079</span><span class="font-semibold text-emerald-600">Rp 5.000</span></li>
+                         <ul id="transaksiTerakhirList" class="space-y-3">
+                            <li class="text-slate-400">Belum ada transaksi.</li>
                          </ul>
                     </div>
                 </div>
@@ -97,21 +94,17 @@
 
             <section id="kasir" class="page-content hidden">
                  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-                    <div class="lg:col-span-2 bg-white rounded-xl shadow p-6 h-[85vh] flex flex-col">
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow p-6 h-[calc(100vh-10rem)] sm:h-[85vh] flex flex-col">
                         <div class="flex flex-col sm:flex-row gap-4 mb-4">
-                            <input id="searchInput" type="text" placeholder="Cari produk..." class="w-full sm:w-1/2 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                            <select id="categoryFilter" class="w-full sm:w-1/2 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input id="searchInput" type="text" placeholder="Cari produk..." class="w-full sm:flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <select id="categoryFilter" class="w-full sm:w-auto p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                                 <option value="all">Semua Kategori</option>
-                                <option value="Minuman">Minuman</option>
-                                <option value="Makanan Ringan">Makanan Ringan</option>
-                                <option value="Sembako">Sembako</option>
-                                <option value="Bumbu Dapur">Bumbu Dapur</option>
                             </select>
                         </div>
                         <div id="productList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto flex-1 p-2">
                         </div>
                     </div>
-                    <div class="lg:col-span-1 bg-white rounded-xl shadow p-6 h-[85vh] flex flex-col">
+                    <div class="lg:col-span-1 bg-white rounded-xl shadow p-6 h-[calc(100vh-10rem)] sm:h-[85vh] flex flex-col">
                         <h3 class="text-xl font-bold mb-4">Keranjang</h3>
                         <div id="cartItems" class="flex-1 overflow-y-auto border-y py-4 space-y-3">
                             <p class="text-slate-400 text-center">Keranjang masih kosong.</p>
@@ -135,11 +128,12 @@
                     <button id="addProductBtn" class="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition">Tambah Produk</button>
                 </div>
                 <div class="bg-white rounded-xl shadow overflow-x-auto">
-                    <table class="w-full text-left">
+                    <table class="w-full text-left min-w-[600px]">
                         <thead class="bg-slate-100">
                             <tr>
                                 <th class="p-4 font-semibold">Nama Produk</th>
                                 <th class="p-4 font-semibold">Kategori</th>
+                                <th class="p-4 font-semibold">Harga Beli</th>
                                 <th class="p-4 font-semibold">Harga Jual</th>
                                 <th class="p-4 font-semibold">Stok</th>
                                 <th class="p-4 font-semibold">Aksi</th>
@@ -152,18 +146,30 @@
             </section>
 
             <section id="laporan" class="page-content hidden">
-                <h2 class="text-2xl font-bold mb-6">Laporan Penjualan</h2>
+                <h2 class="text-2xl font-bold mb-6">Laporan Penjualan & Laba</h2>
                 <div class="bg-white p-6 rounded-xl shadow mb-6">
-                    <div class="flex items-center gap-4 mb-4">
-                        <label for="reportPeriod" class="font-medium">Periode:</label>
-                        <select id="reportPeriod" class="p-2 border rounded-lg">
-                            <option value="daily">Harian</option>
-                            <option value="weekly">Mingguan</option>
-                            <option value="monthly">Bulanan</option>
-                        </select>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+                        <div>
+                            <label for="reportPeriod" class="font-medium">Periode:</label>
+                            <select id="reportPeriod" class="p-2 border rounded-lg">
+                                <option value="daily">Harian</option>
+                                <option value="weekly">Mingguan</option>
+                                <option value="monthly">Bulanan</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="reportDate" class="font-medium">Tanggal:</label>
+                            <input type="date" id="reportDate" class="p-2 border rounded-lg">
+                        </div>
                     </div>
                      <div class="chart-container" style="height: 350px;">
                         <canvas id="salesReportChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h3 class="text-lg font-semibold mb-4">Detail Laporan Periode Terpilih</h3>
+                    <div id="reportDetailsTableContainer" class="overflow-x-auto">
+                        <p class="text-slate-500">Pilih periode dan tanggal untuk melihat detail.</p>
                     </div>
                 </div>
             </section>
@@ -172,7 +178,7 @@
                 <h2 class="text-2xl font-bold mb-6">Pengaturan</h2>
                 <div class="bg-white p-8 rounded-xl shadow max-w-2xl mx-auto">
                     <h3 class="text-lg font-semibold mb-6">Informasi Warung</h3>
-                    <form class="space-y-6">
+                    <form id="settingsForm" class="space-y-6">
                         <div>
                             <label for="shopName" class="block text-sm font-medium text-slate-700 mb-1">Nama Warung</label>
                             <input type="text" id="shopName" value="Warung Sejahtera" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
@@ -189,9 +195,9 @@
                             <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Simpan Perubahan</button>
                         </div>
                     </form>
+                     <div id="settingsMessage" class="mt-4 text-center"></div>
                 </div>
             </section>
-
         </main>
     </div>
 
@@ -218,7 +224,7 @@
     </div>
     
     <div id="productModal" class="modal-backdrop hidden">
-        <div class="bg-white w-full max-w-lg p-8 rounded-xl shadow-lg m-4">
+        <div class="bg-white w-full max-w-lg p-8 rounded-xl shadow-lg m-4 overflow-y-auto max-h-[90vh]">
             <h2 id="productModalTitle" class="text-2xl font-bold mb-6">Tambah Produk Baru</h2>
             <form id="productForm" class="space-y-4">
                 <input type="hidden" id="productId">
@@ -227,22 +233,21 @@
                     <input type="text" id="productName" class="w-full p-3 border rounded-lg" required>
                 </div>
                 <div>
-                    <label for="productCategory" class="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
-                    <select id="productCategory" class="w-full p-3 border rounded-lg" required>
-                        <option value="Minuman">Minuman</option>
-                        <option value="Makanan Ringan">Makanan Ringan</option>
-                        <option value="Sembako">Sembako</option>
-                        <option value="Bumbu Dapur">Bumbu Dapur</option>
-                        <option value="Lainnya">Lainnya</option>
+                    <label for="productCategoryModal" class="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
+                    <select id="productCategoryModal" class="w-full p-3 border rounded-lg" required>
                     </select>
                 </div>
                  <div>
+                    <label for="productCostPrice" class="block text-sm font-medium text-slate-700 mb-1">Harga Beli (Rp)</label>
+                    <input type="number" id="productCostPrice" class="w-full p-3 border rounded-lg" required min="0">
+                </div>
+                 <div>
                     <label for="productPrice" class="block text-sm font-medium text-slate-700 mb-1">Harga Jual (Rp)</label>
-                    <input type="number" id="productPrice" class="w-full p-3 border rounded-lg" required>
+                    <input type="number" id="productPrice" class="w-full p-3 border rounded-lg" required min="0">
                 </div>
                  <div>
                     <label for="productStock" class="block text-sm font-medium text-slate-700 mb-1">Stok Awal</label>
-                    <input type="number" id="productStock" class="w-full p-3 border rounded-lg" required>
+                    <input type="number" id="productStock" class="w-full p-3 border rounded-lg" required min="0">
                 </div>
                 <div class="flex gap-4 pt-4">
                     <button type="button" id="closeProductModalBtn" class="w-full bg-slate-200 text-slate-800 p-3 rounded-lg font-bold hover:bg-slate-300 transition">Batal</button>
@@ -254,31 +259,33 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
     const formatRupiah = (number) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
-    }
+    };
 
-    const mockProducts = [
-        { id: 1, name: 'Kopi Instan', category: 'Minuman', price: 1500, stock: 100, image: '☕' },
-        { id: 2, name: 'Teh Celup', category: 'Minuman', price: 500, stock: 150, image: '🍵' },
-        { id: 3, name: 'Air Mineral 600ml', category: 'Minuman', price: 3000, stock: 80, image: '💧' },
-        { id: 4, name: 'Keripik Singkong', category: 'Makanan Ringan', price: 5000, stock: 50, image: '🥔' },
-        { id: 5, name: 'Biskuit Coklat', category: 'Makanan Ringan', price: 7500, stock: 60, image: '🍪' },
-        { id: 6, name: 'Beras 5kg', category: 'Sembako', price: 65000, stock: 30, image: '🍚' },
-        { id: 7, name: 'Minyak Goreng 2L', category: 'Sembako', price: 32000, stock: 2, image: '🛢️' },
-        { id: 8, name: 'Gula Pasir 1kg', category: 'Sembako', price: 14000, stock: 3, image: '🍬' },
-        { id: 9, name: 'Garam Meja', category: 'Bumbu Dapur', price: 2000, stock: 70, image: '🧂' },
-        { id: 10, name: 'Mie Instan Original', category: 'Sembako', price: 3000, stock: 200, image: '🍜' },
-        { id: 11, name: 'Saus Sambal', category: 'Bumbu Dapur', price: 6000, stock: 40, image: '🌶️' },
-        { id: 12, name: 'Telur Ayam', category: 'Sembako', price: 2500, stock: 12, image: '🥚' },
+    let mockProducts = [
+        { id: 1, name: 'Kopi Instan Sachet', category: 'Minuman', hargaBeli: 1000, price: 1500, stock: 100, image: '☕' },
+        { id: 2, name: 'Teh Celup Kotak', category: 'Minuman', hargaBeli: 4000, price: 5500, stock: 150, image: '🍵' },
+        { id: 3, name: 'Air Mineral 600ml', category: 'Minuman', hargaBeli: 2000, price: 3000, stock: 80, image: '💧' },
+        { id: 4, name: 'Keripik Singkong Pedas', category: 'Makanan Ringan', hargaBeli: 3500, price: 5000, stock: 50, image: '🥔' },
+        { id: 5, name: 'Biskuit Coklat Pack', category: 'Makanan Ringan', hargaBeli: 6000, price: 7500, stock: 60, image: '🍪' },
+        { id: 6, name: 'Beras Premium 5kg', category: 'Sembako', hargaBeli: 60000, price: 65000, stock: 30, image: '🍚' },
+        { id: 7, name: 'Minyak Goreng Refill 2L', category: 'Sembako', hargaBeli: 28000, price: 32000, stock: 2, image: '🛢️' },
+        { id: 8, name: 'Gula Pasir Lokal 1kg', category: 'Sembako', hargaBeli: 12500, price: 14000, stock: 3, image: '🍬' },
+        { id: 9, name: 'Garam Meja Beryodium', category: 'Bumbu Dapur', hargaBeli: 1500, price: 2500, stock: 70, image: '🧂' },
+        { id: 10, name: 'Mie Instan Goreng Original', category: 'Sembako', hargaBeli: 2500, price: 3000, stock: 200, image: '🍜' },
+        { id: 11, name: 'Saus Sambal Botol', category: 'Bumbu Dapur', hargaBeli: 5000, price: 6500, stock: 40, image: '🌶️' },
+        { id: 12, name: 'Telur Ayam Negeri (per butir)', category: 'Sembako', hargaBeli: 2000, price: 2500, stock: 12, image: '🥚' },
     ];
+    
+    let productCategories = ["Minuman", "Makanan Ringan", "Sembako", "Bumbu Dapur", "Perlengkapan Mandi", "Obat Ringan", "Lainnya"];
 
     let cart = [];
-    
+    let dailyTransactions = []; 
+
     const navLinks = document.querySelectorAll('.nav-link');
     const pageContents = document.querySelectorAll('.page-content');
-    const productList = document.getElementById('productList');
+    const productListEl = document.getElementById('productList');
     const cartItemsEl = document.getElementById('cartItems');
     const cartTotalEl = document.getElementById('cartTotal');
     const payButton = document.getElementById('payButton');
@@ -289,13 +296,658 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalTotalEl = document.getElementById('modalTotal');
     const completeTransactionBtn = document.getElementById('completeTransactionBtn');
     const searchInput = document.getElementById('searchInput');
-    const categoryFilter = document.getElementById('categoryFilter');
+    const categoryFilterEl = document.getElementById('categoryFilter');
     const productTableBody = document.getElementById('productTableBody');
     const addProductBtn = document.getElementById('addProductBtn');
     const productModal = document.getElementById('productModal');
     const closeProductModalBtn = document.getElementById('closeProductModalBtn');
     const productForm = document.getElementById('productForm');
     const productModalTitle = document.getElementById('productModalTitle');
+    const productCategoryModalEl = document.getElementById('productCategoryModal');
+
+    const penjualanHariIniEl = document.getElementById('penjualanHariIniEl');
+    const labaHariIniEl = document.getElementById('labaHariIniEl');
+    const transaksiHariIniEl = document.getElementById('transaksiHariIniEl');
+    const produkTerlarisEl = document.getElementById('produkTerlarisEl');
+    const stokKritisListEl = document.getElementById('stokKritisList');
+    const transaksiTerakhirListEl = document.getElementById('transaksiTerakhirList');
+    
+    const reportPeriodEl = document.getElementById('reportPeriod');
+    const reportDateEl = document.getElementById('reportDate');
+    const reportDetailsTableContainerEl = document.getElementById('reportDetailsTableContainer');
+    const settingsForm = document.getElementById('settingsForm');
+    const settingsMessage = document.getElementById('settingsMessage');
+
+
+    const populateCategories = () => {
+        const allCategories = [...new Set(mockProducts.map(p => p.category).concat(productCategories))].sort();
+         productCategories = allCategories; // Update global categories
+
+        categoryFilterEl.innerHTML = '<option value="all">Semua Kategori</option>';
+        allCategories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            categoryFilterEl.appendChild(option.cloneNode(true));
+            productCategoryModalEl.appendChild(option);
+        });
+    };
+    
+    const renderProducts = (filter = '', category = 'all') => {
+        productListEl.innerHTML = '';
+        const filteredProducts = mockProducts.filter(p => {
+            const nameMatch = p.name.toLowerCase().includes(filter.toLowerCase());
+            const categoryMatch = category === 'all' || p.category === category;
+            return nameMatch && categoryMatch && p.stock > 0;
+        });
+
+        if(filteredProducts.length === 0) {
+            productListEl.innerHTML = '<p class="text-slate-400 col-span-full text-center py-10">Produk tidak ditemukan atau stok habis.</p>';
+            return;
+        }
+
+        filteredProducts.forEach(product => {
+            const productCard = document.createElement('div');
+            productCard.className = 'bg-slate-50 border rounded-lg p-3 flex flex-col items-center text-center cursor-pointer hover:shadow-lg hover:border-blue-500 transition-all';
+            productCard.innerHTML = `
+                <div class="text-4xl mb-2 h-10 flex items-center justify-center">${product.image}</div>
+                <h4 class="font-semibold text-sm h-10 flex items-center justify-center leading-tight">${product.name}</h4>
+                <p class="text-blue-600 font-bold mt-1">${formatRupiah(product.price)}</p>
+                <p class="text-xs text-slate-500">Stok: ${product.stock}</p>
+            `;
+            productCard.addEventListener('click', () => addToCart(product.id));
+            productListEl.appendChild(productCard);
+        });
+    };
+    
+    const renderProductTable = () => {
+        productTableBody.innerHTML = '';
+        if (mockProducts.length === 0) {
+            productTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">Belum ada produk.</td></tr>';
+            return;
+        }
+        mockProducts.forEach(p => {
+            const row = document.createElement('tr');
+            row.className = 'border-b hover:bg-slate-50 transition-colors';
+            row.innerHTML = `
+                <td class="p-4">${p.name}</td>
+                <td class="p-4">${p.category}</td>
+                <td class="p-4">${formatRupiah(p.hargaBeli)}</td>
+                <td class="p-4">${formatRupiah(p.price)}</td>
+                <td class="p-4 ${p.stock <= 5 ? 'text-red-600 font-semibold' : (p.stock <=15 ? 'text-amber-600 font-medium' : '')}">${p.stock}</td>
+                <td class="p-4">
+                    <button class="text-blue-600 hover:underline mr-2 text-sm" data-id="${p.id}" onclick="window.app.editProduct(event)">Edit</button>
+                    <button class="text-red-600 hover:underline text-sm" data-id="${p.id}" onclick="window.app.deleteProduct(event)">Hapus</button>
+                </td>
+            `;
+            productTableBody.appendChild(row);
+        });
+    };
+
+    const addToCart = (productId) => {
+        const product = mockProducts.find(p => p.id === productId);
+        if (!product || product.stock <= 0) {
+            // Optionally show a message that product is out of stock
+            // For now, it won't be rendered if stock is 0 by renderProducts
+            return;
+        }
+        const cartItem = cart.find(item => item.id === productId);
+
+        if (cartItem) {
+            if (cartItem.quantity < product.stock) {
+                 cartItem.quantity++;
+            } else {
+                // Show message: max stock reached for this item in cart
+                displayTemporaryMessage(cartItemsEl, "Stok produk tidak mencukupi di keranjang.", "text-red-500");
+            }
+        } else {
+            cart.push({ ...product, quantity: 1 });
+        }
+        renderCart();
+    };
+    
+    const renderCart = () => {
+        cartItemsEl.innerHTML = '';
+        if (cart.length === 0) {
+            cartItemsEl.innerHTML = '<p class="text-slate-400 text-center">Keranjang masih kosong.</p>';
+            payButton.disabled = true;
+        } else {
+            cart.forEach(item => {
+                const cartItemEl = document.createElement('div');
+                cartItemEl.className = 'flex items-center justify-between py-2 border-b border-slate-100 last:border-b-0';
+                cartItemEl.innerHTML = `
+                    <div class="flex-1 mr-2">
+                        <p class="font-semibold text-sm">${item.name}</p>
+                        <p class="text-xs text-slate-500">${formatRupiah(item.price)} x ${item.quantity}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${item.id}, -1)">-</button>
+                        <span class="w-5 text-center">${item.quantity}</span>
+                        <button class="w-7 h-7 bg-slate-200 rounded-md font-bold hover:bg-slate-300 transition-colors" onclick="window.app.updateQuantity(${item.id}, 1)">+</button>
+                    </div>
+                `;
+                cartItemsEl.appendChild(cartItemEl);
+            });
+            payButton.disabled = false;
+        }
+        updateCartTotal();
+    };
+    
+    window.app = {
+        updateQuantity: (productId, change) => {
+            const cartItem = cart.find(item => item.id === productId);
+            const productInStock = mockProducts.find(p => p.id === productId);
+
+            if (cartItem && productInStock) {
+                const newQuantity = cartItem.quantity + change;
+                if (newQuantity <= 0) {
+                    cart = cart.filter(item => item.id !== productId);
+                } else if (newQuantity > productInStock.stock) {
+                     // Show message: max stock reached
+                    displayTemporaryMessage(cartItemsEl, "Stok produk tidak mencukupi.", "text-red-500");
+                    cartItem.quantity = productInStock.stock; // Set to max available
+                }
+                else {
+                    cartItem.quantity = newQuantity;
+                }
+            }
+            renderCart();
+        },
+        editProduct: (event) => {
+            const productId = parseInt(event.target.dataset.id);
+            const product = mockProducts.find(p => p.id === productId);
+            if(product){
+                productModalTitle.innerText = "Edit Produk";
+                document.getElementById('productId').value = product.id;
+                document.getElementById('productName').value = product.name;
+                document.getElementById('productCategoryModal').value = product.category;
+                document.getElementById('productCostPrice').value = product.hargaBeli;
+                document.getElementById('productPrice').value = product.price;
+                document.getElementById('productStock').value = product.stock;
+                productModal.classList.remove('hidden');
+            }
+        },
+        deleteProduct: (event) => {
+            const productId = parseInt(event.target.dataset.id);
+            // Bypassing confirm() for this environment, but in a real app, use a custom modal.
+            // const confirmed = true; 
+            // For a slightly better UX, let's use a simple custom confirmation
+            showCustomConfirm(`Apakah Anda yakin ingin menghapus produk ini? Stok akan dikembalikan jika ada di keranjang.`, () => {
+                const productInCartIndex = cart.findIndex(item => item.id === productId);
+                if (productInCartIndex > -1) {
+                    cart.splice(productInCartIndex, 1);
+                    renderCart();
+                }
+
+                const index = mockProducts.findIndex(p => p.id === productId);
+                if(index > -1){
+                    mockProducts.splice(index, 1);
+                    renderProductTable();
+                    renderProducts();
+                    updateDashboard(); // Stok kritis might change
+                    populateCategories(); // Categories might change
+                }
+            });
+        }
+    };
+    
+    const updateCartTotal = () => {
+        const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        cartTotalEl.innerText = formatRupiah(total);
+        return total;
+    };
+
+    payButton.addEventListener('click', () => {
+        if (cart.length === 0) return;
+        const total = updateCartTotal();
+        modalTotalEl.innerText = formatRupiah(total);
+        amountPaidInput.value = '';
+        changeAmountEl.innerText = formatRupiah(0);
+        completeTransactionBtn.disabled = true;
+        paymentModal.classList.remove('hidden');
+        amountPaidInput.focus();
+    });
+
+    closeModalBtn.addEventListener('click', () => paymentModal.classList.add('hidden'));
+    
+    amountPaidInput.addEventListener('input', () => {
+        const total = updateCartTotal();
+        const paid = parseFloat(amountPaidInput.value) || 0;
+        const change = paid - total;
+        changeAmountEl.innerText = formatRupiah(change >= 0 ? change : 0);
+        completeTransactionBtn.disabled = paid < total;
+    });
+
+    completeTransactionBtn.addEventListener('click', () => {
+        if (cart.length === 0) return;
+        let currentTransactionProfit = 0;
+        let currentTransactionTotal = 0;
+
+        cart.forEach(cartItem => {
+            const product = mockProducts.find(p => p.id === cartItem.id);
+            if(product) {
+                product.stock -= cartItem.quantity;
+                currentTransactionProfit += (product.price - product.hargaBeli) * cartItem.quantity;
+                currentTransactionTotal += product.price * cartItem.quantity;
+            }
+        });
+        
+        dailyTransactions.push({
+            id: `INV/${new Date().toISOString().slice(0,10).replace(/-/g,'')}/${Date.now().toString().slice(-5)}`,
+            items: JSON.parse(JSON.stringify(cart)), // Deep copy
+            totalAmount: currentTransactionTotal,
+            profit: currentTransactionProfit,
+            timestamp: new Date()
+        });
+
+        cart = [];
+        renderCart();
+        renderProducts(); 
+        renderProductTable();
+        updateDashboard();
+        updateSalesReport();
+        paymentModal.classList.add('hidden');
+    });
+
+    searchInput.addEventListener('input', (e) => renderProducts(e.target.value, categoryFilterEl.value));
+    categoryFilterEl.addEventListener('change', (e) => renderProducts(searchInput.value, e.target.value));
+
+    addProductBtn.addEventListener('click', () => {
+        productModalTitle.innerText = 'Tambah Produk Baru';
+        productForm.reset();
+        document.getElementById('productId').value = '';
+        productCategoryModalEl.value = productCategories[0] || ''; // Default to first category or empty
+        productModal.classList.remove('hidden');
+    });
+
+    closeProductModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
+    
+    productForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('productId').value;
+        const name = document.getElementById('productName').value;
+        const category = document.getElementById('productCategoryModal').value;
+        const costPrice = parseFloat(document.getElementById('productCostPrice').value);
+        const price = parseFloat(document.getElementById('productPrice').value);
+        const stock = parseInt(document.getElementById('productStock').value);
+
+        if (costPrice > price) {
+            showCustomAlert("Harga beli tidak boleh lebih besar dari harga jual.", "Error");
+            return;
+        }
+
+        const newProductData = {
+            name: name,
+            category: category,
+            hargaBeli: costPrice,
+            price: price,
+            stock: stock,
+            image: mockProducts.find(p=>p.category === category)?.image || '🆕' // try to get image from same category
+        };
+
+        if(id) { // Editing existing product
+            const productIndex = mockProducts.findIndex(p => p.id === parseInt(id));
+            if(productIndex > -1) {
+                mockProducts[productIndex] = { ...mockProducts[productIndex], ...newProductData };
+            }
+        } else { // Adding new product
+            newProductData.id = Date.now(); // Simple ID for new products
+            mockProducts.unshift(newProductData);
+        }
+        
+        productModal.classList.add('hidden');
+        renderProductTable();
+        renderProducts();
+        updateDashboard(); // Stok kritis might change
+        populateCategories(); // If a new category was implicitly added (though form uses select)
+    });
+
+    const updateDashboard = () => {
+        const today = new Date().toDateString();
+        const todaysTransactions = dailyTransactions.filter(t => new Date(t.timestamp).toDateString() === today);
+
+        const totalSalesToday = todaysTransactions.reduce((sum, t) => sum + t.totalAmount, 0);
+        const totalProfitToday = todaysTransactions.reduce((sum, t) => sum + t.profit, 0);
+        
+        penjualanHariIniEl.innerText = formatRupiah(totalSalesToday);
+        labaHariIniEl.innerText = formatRupiah(totalProfitToday);
+        transaksiHariIniEl.innerText = todaysTransactions.length;
+
+        // Produk Terlaris
+        const soldItemsCount = {};
+        todaysTransactions.forEach(t => {
+            t.items.forEach(item => {
+                soldItemsCount[item.name] = (soldItemsCount[item.name] || 0) + item.quantity;
+            });
+        });
+        const sortedSoldItems = Object.entries(soldItemsCount).sort((a, b) => b[1] - a[1]);
+        produkTerlarisEl.innerText = sortedSoldItems.length > 0 ? `${sortedSoldItems[0][0]} (${sortedSoldItems[0][1]})` : '-';
+        
+        // Stok Kritis
+        stokKritisListEl.innerHTML = '';
+        const criticalStockProducts = mockProducts.filter(p => p.stock <= 5).slice(0, 5);
+        if (criticalStockProducts.length > 0) {
+            criticalStockProducts.forEach(p => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center text-sm';
+                li.innerHTML = `<span>${p.name}</span><span class="font-bold text-red-500">${p.stock} pcs</span>`;
+                stokKritisListEl.appendChild(li);
+            });
+        } else {
+            stokKritisListEl.innerHTML = '<li class="text-slate-400 text-sm">Tidak ada stok kritis.</li>';
+        }
+
+        // Transaksi Terakhir
+        transaksiTerakhirListEl.innerHTML = '';
+        const last5Transactions = dailyTransactions.slice(-5).reverse();
+        if (last5Transactions.length > 0) {
+            last5Transactions.forEach(t => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center text-sm';
+                li.innerHTML = `<span>${t.id}</span><span class="font-semibold text-emerald-600">${formatRupiah(t.totalAmount)}</span>`;
+                transaksiTerakhirListEl.appendChild(li);
+            });
+        } else {
+            transaksiTerakhirListEl.innerHTML = '<li class="text-slate-400 text-sm">Belum ada transaksi.</li>';
+        }
+    };
+    
+    let salesTrendChartInstance;
+    const renderSalesTrendChart = () => {
+        const labels = [];
+        const salesData = [];
+        const profitData = [];
+
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            labels.push(d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' }));
+            
+            const dateString = d.toDateString();
+            const salesOnDate = dailyTransactions
+                .filter(t => new Date(t.timestamp).toDateString() === dateString)
+                .reduce((sum, t) => sum + t.totalAmount, 0);
+            salesData.push(salesOnDate);
+
+            const profitOnDate = dailyTransactions
+                .filter(t => new Date(t.timestamp).toDateString() === dateString)
+                .reduce((sum, t) => sum + t.profit, 0);
+            profitData.push(profitOnDate);
+        }
+
+        const data = {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Penjualan',
+                    data: salesData,
+                    borderColor: 'rgb(37, 99, 235)',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    yAxisID: 'ySales',
+                },
+                {
+                    label: 'Laba',
+                    data: profitData,
+                    borderColor: 'rgb(22, 163, 74)',
+                    backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    yAxisID: 'yProfit',
+                }
+            ]
+        };
+        if (salesTrendChartInstance) {
+            salesTrendChartInstance.data = data;
+            salesTrendChartInstance.update();
+        } else {
+            const ctx = document.getElementById('salesTrendChart').getContext('2d');
+            salesTrendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        ySales: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'left',
+                            beginAtZero: true, 
+                            ticks: { callback: value => formatRupiah(value) } 
+                        },
+                        yProfit: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'right',
+                            beginAtZero: true,
+                            ticks: { callback: value => formatRupiah(value) },
+                            grid: { drawOnChartArea: false } 
+                        }
+                    },
+                    plugins: {
+                        tooltip: { 
+                            callbacks: { 
+                                label: context => `${context.dataset.label}: ${formatRupiah(context.raw)}`
+                            } 
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                }
+            });
+        }
+    };
+
+    let salesReportChartInstance;
+    const updateSalesReport = () => {
+        renderSalesTrendChart(); // Update dashboard trend chart too
+
+        const period = reportPeriodEl.value;
+        const selectedDate = new Date(reportDateEl.value || new Date()); // Default to today if not set
+        
+        let filteredTransactions = [];
+        
+        if (period === 'daily') {
+            const dateStr = selectedDate.toDateString();
+            filteredTransactions = dailyTransactions.filter(t => new Date(t.timestamp).toDateString() === dateStr);
+        } else if (period === 'weekly') {
+            const startOfWeek = new Date(selectedDate);
+            startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay() + (selectedDate.getDay() === 0 ? -6 : 1)); // Monday
+            startOfWeek.setHours(0,0,0,0);
+            
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23,59,59,999);
+
+            filteredTransactions = dailyTransactions.filter(t => {
+                const tDate = new Date(t.timestamp);
+                return tDate >= startOfWeek && tDate <= endOfWeek;
+            });
+        } else if (period === 'monthly') {
+            const year = selectedDate.getFullYear();
+            const month = selectedDate.getMonth();
+            filteredTransactions = dailyTransactions.filter(t => {
+                const tDate = new Date(t.timestamp);
+                return tDate.getFullYear() === year && tDate.getMonth() === month;
+            });
+        }
+
+        const salesByCat = {};
+        const profitByCat = {};
+        const categories = [...new Set(mockProducts.map(p => p.category))].sort();
+
+        categories.forEach(cat => {
+            salesByCat[cat] = 0;
+            profitByCat[cat] = 0;
+        });
+
+        filteredTransactions.forEach(t => {
+            t.items.forEach(item => {
+                if (categories.includes(item.category)) {
+                    salesByCat[item.category] += item.price * item.quantity;
+                    profitByCat[item.category] += (item.price - item.hargaBeli) * item.quantity;
+                }
+            });
+        });
+
+        const chartData = {
+            labels: categories,
+            datasets: [
+                {
+                    label: 'Total Penjualan',
+                    data: categories.map(cat => salesByCat[cat]),
+                    backgroundColor: '#3b82f6', // Blue
+                },
+                {
+                    label: 'Total Laba',
+                    data: categories.map(cat => profitByCat[cat]),
+                    backgroundColor: '#10b981', // Green
+                }
+            ]
+        };
+
+        if (salesReportChartInstance) {
+            salesReportChartInstance.data = chartData;
+            salesReportChartInstance.update();
+        } else {
+            const ctx = document.getElementById('salesReportChart').getContext('2d');
+            salesReportChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: value => formatRupiah(value) } }
+                    },
+                    plugins: {
+                        tooltip: { callbacks: { label: context => `${context.dataset.label}: ${formatRupiah(context.raw)}` } }
+                    }
+                }
+            });
+        }
+        renderReportDetailsTable(filteredTransactions, period);
+    };
+    
+    const renderReportDetailsTable = (transactions, period) => {
+        reportDetailsTableContainerEl.innerHTML = '';
+        if (transactions.length === 0) {
+            reportDetailsTableContainerEl.innerHTML = `<p class="text-slate-500">Tidak ada transaksi untuk periode ${period} ini.</p>`;
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'w-full text-left min-w-[700px]';
+        table.innerHTML = `
+            <thead class="bg-slate-100">
+                <tr>
+                    <th class="p-3 font-semibold">ID Transaksi</th>
+                    <th class="p-3 font-semibold">Waktu</th>
+                    <th class="p-3 font-semibold">Item</th>
+                    <th class="p-3 font-semibold text-right">Total Penjualan</th>
+                    <th class="p-3 font-semibold text-right">Total Laba</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+        transactions.forEach(t => {
+            const itemsString = t.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
+            const row = document.createElement('tr');
+            row.className = 'border-b hover:bg-slate-50';
+            row.innerHTML = `
+                <td class="p-3">${t.id}</td>
+                <td class="p-3">${new Date(t.timestamp).toLocaleString('id-ID')}</td>
+                <td class="p-3 text-sm">${itemsString}</td>
+                <td class="p-3 text-right">${formatRupiah(t.totalAmount)}</td>
+                <td class="p-3 text-right">${formatRupiah(t.profit)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+        reportDetailsTableContainerEl.appendChild(table);
+    };
+
+    reportPeriodEl.addEventListener('change', updateSalesReport);
+    reportDateEl.addEventListener('change', updateSalesReport);
+    reportDateEl.valueAsDate = new Date(); // Set default to today
+
+    settingsForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const shopName = document.getElementById('shopName').value;
+        // Save settings (e.g., to localStorage or backend in a real app)
+        settingsMessage.textContent = 'Pengaturan berhasil disimpan!';
+        settingsMessage.className = 'mt-4 text-center text-green-600';
+        setTimeout(() => settingsMessage.textContent = '', 3000);
+    });
+    
+    function displayTemporaryMessage(element, message, className = "text-green-500") {
+        const msgElement = document.createElement('p');
+        msgElement.textContent = message;
+        msgElement.className = `text-sm ${className} text-center py-1`;
+        
+        const firstChild = element.firstChild;
+        element.insertBefore(msgElement, firstChild);
+
+        setTimeout(() => {
+            if (msgElement.parentNode === element) {
+                 element.removeChild(msgElement);
+            }
+        }, 2000);
+    }
+
+    function showCustomAlert(message, title = "Informasi") {
+        const existingAlert = document.getElementById('customAlertModal');
+        if (existingAlert) existingAlert.remove();
+
+        const alertModal = document.createElement('div');
+        alertModal.id = 'customAlertModal';
+        alertModal.className = 'modal-backdrop';
+        alertModal.innerHTML = `
+            <div class="bg-white w-full max-w-sm p-6 rounded-xl shadow-lg m-4">
+                <h3 class="text-xl font-bold mb-4">${title}</h3>
+                <p class="text-slate-700 mb-6">${message}</p>
+                <button id="customAlertOkBtn" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">OK</button>
+            </div>
+        `;
+        document.body.appendChild(alertModal);
+        document.getElementById('customAlertOkBtn').addEventListener('click', () => {
+            alertModal.remove();
+        });
+        document.getElementById('customAlertOkBtn').focus();
+    }
+
+    function showCustomConfirm(message, onConfirm, title = "Konfirmasi") {
+        const existingConfirm = document.getElementById('customConfirmModal');
+        if (existingConfirm) existingConfirm.remove();
+
+        const confirmModal = document.createElement('div');
+        confirmModal.id = 'customConfirmModal';
+        confirmModal.className = 'modal-backdrop';
+        confirmModal.innerHTML = `
+            <div class="bg-white w-full max-w-sm p-6 rounded-xl shadow-lg m-4">
+                <h3 class="text-xl font-bold mb-4">${title}</h3>
+                <p class="text-slate-700 mb-6">${message}</p>
+                <div class="flex gap-4">
+                    <button id="customConfirmCancelBtn" class="w-full bg-slate-200 text-slate-800 p-3 rounded-lg font-bold hover:bg-slate-300 transition">Batal</button>
+                    <button id="customConfirmOkBtn" class="w-full bg-red-600 text-white p-3 rounded-lg font-bold hover:bg-red-700 transition">Ya, Lanjutkan</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(confirmModal);
+        document.getElementById('customConfirmOkBtn').addEventListener('click', () => {
+            onConfirm();
+            confirmModal.remove();
+        });
+        document.getElementById('customConfirmCancelBtn').addEventListener('click', () => {
+            confirmModal.remove();
+        });
+         document.getElementById('customConfirmCancelBtn').focus();
+    }
+
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
@@ -313,266 +965,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 page.classList.add('hidden');
                 if (page.id === target) {
                     page.classList.remove('hidden');
+                    if (target === 'dashboard') updateDashboard();
+                    if (target === 'laporan') updateSalesReport();
                 }
             });
         });
     });
-
-    const renderProducts = (filter = '', category = 'all') => {
-        productList.innerHTML = '';
-        const filteredProducts = mockProducts.filter(p => {
-            const nameMatch = p.name.toLowerCase().includes(filter.toLowerCase());
-            const categoryMatch = category === 'all' || p.category === category;
-            return nameMatch && categoryMatch;
-        });
-
-        if(filteredProducts.length === 0) {
-            productList.innerHTML = '<p class="text-slate-400 col-span-full text-center">Produk tidak ditemukan.</p>';
-            return;
-        }
-
-        filteredProducts.forEach(product => {
-            const productCard = document.createElement('div');
-            productCard.className = 'bg-slate-50 border rounded-lg p-3 flex flex-col items-center text-center cursor-pointer hover:shadow-lg hover:border-blue-500 transition';
-            productCard.innerHTML = `
-                <div class="text-4xl mb-2">${product.image}</div>
-                <h4 class="font-semibold text-sm h-10 flex items-center">${product.name}</h4>
-                <p class="text-blue-600 font-bold mt-1">${formatRupiah(product.price)}</p>
-            `;
-            productCard.addEventListener('click', () => addToCart(product.id));
-            productList.appendChild(productCard);
-        });
-    };
     
-    const renderProductTable = () => {
-        productTableBody.innerHTML = '';
-        mockProducts.forEach(p => {
-            const row = document.createElement('tr');
-            row.className = 'border-b';
-            row.innerHTML = `
-                <td class="p-4">${p.name}</td>
-                <td class="p-4">${p.category}</td>
-                <td class="p-4">${formatRupiah(p.price)}</td>
-                <td class="p-4">${p.stock}</td>
-                <td class="p-4">
-                    <button class="text-blue-600 hover:underline mr-2" data-id="${p.id}" onclick="window.app.editProduct(event)">Edit</button>
-                    <button class="text-red-600 hover:underline" data-id="${p.id}" onclick="window.app.deleteProduct(event)">Hapus</button>
-                </td>
-            `;
-            productTableBody.appendChild(row);
-        });
-    };
-
-    const addToCart = (productId) => {
-        const product = mockProducts.find(p => p.id === productId);
-        const cartItem = cart.find(item => item.id === productId);
-
-        if (cartItem) {
-            cartItem.quantity++;
-        } else {
-            cart.push({ ...product, quantity: 1 });
-        }
-        renderCart();
-    };
-    
-    const renderCart = () => {
-        cartItemsEl.innerHTML = '';
-        if (cart.length === 0) {
-            cartItemsEl.innerHTML = '<p class="text-slate-400 text-center">Keranjang masih kosong.</p>';
-            payButton.disabled = true;
-        } else {
-            cart.forEach(item => {
-                const cartItemEl = document.createElement('div');
-                cartItemEl.className = 'flex items-center justify-between';
-                cartItemEl.innerHTML = `
-                    <div>
-                        <p class="font-semibold">${item.name}</p>
-                        <p class="text-sm text-slate-500">${formatRupiah(item.price)}</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button class="w-7 h-7 bg-slate-200 rounded-full font-bold" onclick="window.app.updateQuantity(${item.id}, -1)">-</button>
-                        <span>${item.quantity}</span>
-                        <button class="w-7 h-7 bg-slate-200 rounded-full font-bold" onclick="window.app.updateQuantity(${item.id}, 1)">+</button>
-                    </div>
-                `;
-                cartItemsEl.appendChild(cartItemEl);
-            });
-            payButton.disabled = false;
-        }
-        updateCartTotal();
-    };
-
-    window.app = {
-        updateQuantity: (productId, change) => {
-            const cartItem = cart.find(item => item.id === productId);
-            if (cartItem) {
-                cartItem.quantity += change;
-                if (cartItem.quantity <= 0) {
-                    cart = cart.filter(item => item.id !== productId);
-                }
-            }
-            renderCart();
-        },
-        editProduct: (event) => {
-            const productId = parseInt(event.target.dataset.id);
-            const product = mockProducts.find(p => p.id === productId);
-            if(product){
-                productModalTitle.innerText = "Edit Produk";
-                document.getElementById('productId').value = product.id;
-                document.getElementById('productName').value = product.name;
-                document.getElementById('productCategory').value = product.category;
-                document.getElementById('productPrice').value = product.price;
-                document.getElementById('productStock').value = product.stock;
-                productModal.classList.remove('hidden');
-            }
-        },
-        deleteProduct: (event) => {
-            const productId = parseInt(event.target.dataset.id);
-            const confirmed = true; // Bypassing confirm() for this environment
-            if(confirmed){
-                const index = mockProducts.findIndex(p => p.id === productId);
-                if(index > -1){
-                    mockProducts.splice(index, 1);
-                    renderProductTable();
-                    renderProducts();
-                }
-            }
-        }
-    };
-    
-    const updateCartTotal = () => {
-        const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        cartTotalEl.innerText = formatRupiah(total);
-        return total;
-    };
-
-    payButton.addEventListener('click', () => {
-        const total = updateCartTotal();
-        modalTotalEl.innerText = formatRupiah(total);
-        amountPaidInput.value = '';
-        changeAmountEl.innerText = formatRupiah(0);
-        completeTransactionBtn.disabled = true;
-        paymentModal.classList.remove('hidden');
-        amountPaidInput.focus();
-    });
-
-    closeModalBtn.addEventListener('click', () => {
-        paymentModal.classList.add('hidden');
-    });
-    
-    amountPaidInput.addEventListener('input', () => {
-        const total = updateCartTotal();
-        const paid = parseFloat(amountPaidInput.value) || 0;
-        const change = paid - total;
-        changeAmountEl.innerText = formatRupiah(change >= 0 ? change : 0);
-        completeTransactionBtn.disabled = change < 0;
-    });
-
-    completeTransactionBtn.addEventListener('click', () => {
-        cart.forEach(cartItem => {
-            const product = mockProducts.find(p => p.id === cartItem.id);
-            if(product) {
-                product.stock -= cartItem.quantity;
-            }
-        });
-        cart = [];
-        renderCart();
-        renderProducts();
-        renderProductTable();
-        paymentModal.classList.add('hidden');
-    });
-
-    searchInput.addEventListener('input', (e) => renderProducts(e.target.value, categoryFilter.value));
-    categoryFilter.addEventListener('change', (e) => renderProducts(searchInput.value, e.target.value));
-
-    addProductBtn.addEventListener('click', () => {
-        productModalTitle.innerText = 'Tambah Produk Baru';
-        productForm.reset();
-        document.getElementById('productId').value = '';
-        productModal.classList.remove('hidden');
-    });
-
-    closeProductModalBtn.addEventListener('click', () => {
-        productModal.classList.add('hidden');
-    });
-    
-    productForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const id = document.getElementById('productId').value;
-        const newProduct = {
-            id: id ? parseInt(id) : Date.now(),
-            name: document.getElementById('productName').value,
-            category: document.getElementById('productCategory').value,
-            price: parseFloat(document.getElementById('productPrice').value),
-            stock: parseInt(document.getElementById('productStock').value),
-            image: '🆕'
-        };
-
-        if(id) {
-            const index = mockProducts.findIndex(p => p.id === newProduct.id);
-            if(index > -1) mockProducts[index] = newProduct;
-        } else {
-            mockProducts.unshift(newProduct);
-        }
-        
-        productModal.classList.add('hidden');
-        renderProductTable();
-        renderProducts();
-    });
-    
-    const salesTrendCtx = document.getElementById('salesTrendChart').getContext('2d');
-    new Chart(salesTrendCtx, {
-        type: 'line',
-        data: {
-            labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
-            datasets: [{
-                label: 'Penjualan',
-                data: [300000, 550000, 450000, 780000, 650000, 950000, 1250000],
-                borderColor: 'rgb(37, 99, 235)',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, ticks: { callback: value => formatRupiah(value) } }
-            },
-            plugins: {
-                tooltip: { callbacks: { label: context => formatRupiah(context.raw) } }
-            }
-        }
-    });
-
-    const salesReportCtx = document.getElementById('salesReportChart').getContext('2d');
-    new Chart(salesReportCtx, {
-        type: 'bar',
-        data: {
-            labels: ['Makanan Ringan', 'Minuman', 'Sembako', 'Bumbu Dapur'],
-            datasets: [{
-                label: 'Total Penjualan',
-                data: [450000, 320000, 1500000, 120000],
-                backgroundColor: ['#3b82f6', '#10b981', '#f97316', '#eab308'],
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, ticks: { callback: value => formatRupiah(value) } }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: context => formatRupiah(context.raw) } }
-            }
-        }
-    });
-    
+    // Initial Setup
+    populateCategories();
     renderProducts();
     renderCart();
     renderProductTable();
+    updateDashboard();
+    updateSalesReport(); // Initial call for report chart
 });
 </script>
 
